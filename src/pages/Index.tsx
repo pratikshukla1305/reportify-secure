@@ -10,6 +10,7 @@ import CompareCard from '@/components/CompareCard';
 import AuthButton from '@/components/AuthButton';
 import { Shield, ArrowUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Link } from 'react-router-dom';
 
 const Index = () => {
   // Smooth scroll for anchor links
@@ -105,12 +106,16 @@ const Index = () => {
               </ul>
               
               <div className="flex flex-col sm:flex-row gap-4">
-                <Button size="lg" className="bg-shield-blue text-white hover:bg-blue-600 transition-all">
-                  Connect Wallet
-                </Button>
-                <Button size="lg" variant="outline" className="border-shield-blue text-shield-blue hover:bg-shield-blue hover:text-white transition-all">
-                  Learn About Rewards
-                </Button>
+                <Link to="/connect-wallet">
+                  <Button size="lg" className="bg-shield-blue text-white hover:bg-blue-600 transition-all">
+                    Connect Wallet
+                  </Button>
+                </Link>
+                <Link to="/learn-about-rewards">
+                  <Button size="lg" variant="outline" className="border-shield-blue text-shield-blue hover:bg-shield-blue hover:text-white transition-all">
+                    Learn About Rewards
+                  </Button>
+                </Link>
               </div>
             </div>
             
@@ -196,9 +201,11 @@ const Index = () => {
                     </div>
                     
                     <div className="flex justify-center">
-                      <Button variant="outline" className="w-full border-shield-blue text-shield-blue hover:bg-shield-blue hover:text-white transition-all">
-                        View All Rewards
-                      </Button>
+                      <Link to="/view-all-rewards" className="w-full">
+                        <Button variant="outline" className="w-full border-shield-blue text-shield-blue hover:bg-shield-blue hover:text-white transition-all">
+                          View All Rewards
+                        </Button>
+                      </Link>
                     </div>
                   </div>
                 </div>
@@ -231,12 +238,16 @@ const Index = () => {
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button size="lg" className="bg-white text-shield-blue hover:bg-blue-50 transition-all">
-                Get Started Now
-              </Button>
-              <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10 transition-all">
-                Request a Demo
-              </Button>
+              <Link to="/get-started">
+                <Button size="lg" className="bg-white text-shield-blue hover:bg-blue-50 transition-all">
+                  Get Started Now
+                </Button>
+              </Link>
+              <Link to="/request-demo">
+                <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10 transition-all">
+                  Request a Demo
+                </Button>
+              </Link>
             </div>
           </div>
         </div>
