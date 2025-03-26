@@ -1,0 +1,106 @@
+
+import React from 'react';
+import Navbar from '@/components/Navbar';
+import Footer from '@/components/Footer';
+import { Button } from '@/components/ui/button';
+import { Link } from 'react-router-dom';
+import { FileText, Edit, Download, ArrowLeft } from 'lucide-react';
+
+const ViewDraftReport = () => {
+  return (
+    <div className="min-h-screen bg-white">
+      <Navbar />
+      
+      <section className="pt-24 pb-16">
+        <div className="container max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center mb-8">
+            <div className="flex items-center">
+              <Link to="/continue-report" className="mr-4">
+                <Button variant="ghost" size="sm" className="text-gray-600">
+                  <ArrowLeft className="h-4 w-4 mr-2" /> Back
+                </Button>
+              </Link>
+              <h1 className="text-2xl sm:text-3xl font-bold">Draft Report #1042</h1>
+            </div>
+            
+            <div className="flex items-center">
+              <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs font-medium">Draft</span>
+            </div>
+          </div>
+          
+          <div className="glass-card p-8 mb-8">
+            <div className="mb-8">
+              <h2 className="text-xl font-semibold mb-4">Report Summary</h2>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div>
+                  <p className="text-sm text-gray-500 mb-1">Incident Date</p>
+                  <p className="font-medium">July 14, 2023</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500 mb-1">Location</p>
+                  <p className="font-medium">Downtown Central Square</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500 mb-1">Report Type</p>
+                  <p className="font-medium">Public Disturbance</p>
+                </div>
+              </div>
+              
+              <h3 className="text-lg font-medium mb-2">Incident Description</h3>
+              <p className="text-gray-700 mb-6">
+                At approximately 8:30 PM, a group of individuals were observed vandalizing public property in 
+                the central square area. Multiple witnesses were present, and several photographs were taken 
+                of the incident in progress. The perpetrators appeared to be in their early twenties and fled 
+                the scene when approached by security personnel.
+              </p>
+              
+              <h3 className="text-lg font-medium mb-2">Submitted Evidence</h3>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+                <div className="bg-gray-100 rounded-lg aspect-square flex items-center justify-center text-gray-400 shimmer">
+                  Image 1
+                </div>
+                <div className="bg-gray-100 rounded-lg aspect-square flex items-center justify-center text-gray-400 shimmer">
+                  Image 2
+                </div>
+                <div className="bg-gray-100 rounded-lg aspect-square flex items-center justify-center text-gray-400 shimmer">
+                  Image 3
+                </div>
+              </div>
+              
+              <div className="border-t border-gray-200 pt-6">
+                <h3 className="text-lg font-medium mb-2">AI Analysis (Preliminary)</h3>
+                <p className="text-gray-700 italic">
+                  Initial analysis indicates the presence of 4-5 individuals engaged in defacement of public 
+                  property. Identified tools include spray paint canisters and markers. Facial recognition 
+                  is incomplete at this stage and requires further processing.
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex flex-col sm:flex-row gap-4">
+              <Link to="/continue-report" className="flex-1">
+                <Button className="w-full bg-shield-blue text-white hover:bg-blue-600 transition-all">
+                  <Edit className="mr-2 h-4 w-4" /> Continue Editing
+                </Button>
+              </Link>
+              
+              <Button variant="outline" className="border-gray-300 text-gray-700 hover:bg-gray-100 hover:text-gray-900 transition-all flex-1">
+                <Download className="mr-2 h-4 w-4" /> Download Draft
+              </Button>
+              
+              <Link to="/generate-detailed-report" className="flex-1">
+                <Button className="w-full bg-green-600 text-white hover:bg-green-700 transition-all">
+                  <FileText className="mr-2 h-4 w-4" /> Generate Full Report
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+      
+      <Footer />
+    </div>
+  );
+};
+
+export default ViewDraftReport;
