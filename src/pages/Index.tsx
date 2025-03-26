@@ -1,5 +1,6 @@
 
 import React, { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import Hero from '@/components/Hero';
 import Features from '@/components/Features';
@@ -13,6 +14,8 @@ import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 
 const Index = () => {
+  const navigate = useNavigate();
+  
   // Smooth scroll for anchor links
   useEffect(() => {
     const handleAnchorClick = (e: MouseEvent) => {
@@ -35,6 +38,11 @@ const Index = () => {
       document.removeEventListener('click', handleAnchorClick);
     };
   }, []);
+
+  // Navigation handlers for direct navigation
+  const handleNavigation = (path: string) => {
+    navigate(path);
+  };
 
   return (
     <div className="min-h-screen bg-white">
@@ -106,16 +114,21 @@ const Index = () => {
               </ul>
               
               <div className="flex flex-col sm:flex-row gap-4">
-                <Link to="/connect-wallet">
-                  <Button size="lg" className="bg-shield-blue text-white hover:bg-blue-600 transition-all">
-                    Connect Wallet
-                  </Button>
-                </Link>
-                <Link to="/learn-about-rewards">
-                  <Button size="lg" variant="outline" className="border-shield-blue text-shield-blue hover:bg-shield-blue hover:text-white transition-all">
-                    Learn About Rewards
-                  </Button>
-                </Link>
+                <Button 
+                  size="lg" 
+                  className="bg-shield-blue text-white hover:bg-blue-600 transition-all"
+                  onClick={() => handleNavigation('/connect-wallet')}
+                >
+                  Connect Wallet
+                </Button>
+                <Button 
+                  size="lg" 
+                  variant="outline" 
+                  className="border-shield-blue text-shield-blue hover:bg-shield-blue hover:text-white transition-all"
+                  onClick={() => handleNavigation('/learn-about-rewards')}
+                >
+                  Learn About Rewards
+                </Button>
               </div>
             </div>
             
@@ -201,11 +214,13 @@ const Index = () => {
                     </div>
                     
                     <div className="flex justify-center">
-                      <Link to="/view-all-rewards" className="w-full">
-                        <Button variant="outline" className="w-full border-shield-blue text-shield-blue hover:bg-shield-blue hover:text-white transition-all">
-                          View All Rewards
-                        </Button>
-                      </Link>
+                      <Button 
+                        variant="outline" 
+                        className="w-full border-shield-blue text-shield-blue hover:bg-shield-blue hover:text-white transition-all"
+                        onClick={() => handleNavigation('/view-all-rewards')}
+                      >
+                        View All Rewards
+                      </Button>
                     </div>
                   </div>
                 </div>
@@ -238,16 +253,21 @@ const Index = () => {
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link to="/get-started">
-                <Button size="lg" className="bg-white text-shield-blue hover:bg-blue-50 transition-all">
-                  Get Started Now
-                </Button>
-              </Link>
-              <Link to="/request-demo">
-                <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10 transition-all">
-                  Request a Demo
-                </Button>
-              </Link>
+              <Button 
+                size="lg" 
+                className="bg-white text-shield-blue hover:bg-blue-50 transition-all"
+                onClick={() => handleNavigation('/get-started')}
+              >
+                Get Started Now
+              </Button>
+              <Button 
+                size="lg" 
+                variant="outline" 
+                className="border-white text-white hover:bg-white/10 transition-all"
+                onClick={() => handleNavigation('/request-demo')}
+              >
+                Request a Demo
+              </Button>
             </div>
           </div>
         </div>
