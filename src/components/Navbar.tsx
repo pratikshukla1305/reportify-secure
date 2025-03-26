@@ -36,24 +36,28 @@ const Navbar = () => {
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-8">
-            <Link to="/" className="text-sm font-medium text-gray-700 hover:text-shield-blue transition-colors">
+            <Link to="/home" className="text-sm font-medium text-gray-700 hover:text-shield-blue transition-colors">
               Home
             </Link>
-            <Link to="/" className="text-sm font-medium text-gray-700 hover:text-shield-blue transition-colors">
+            <Link to="/features" className="text-sm font-medium text-gray-700 hover:text-shield-blue transition-colors">
               Features
             </Link>
-            <Link to="/" className="text-sm font-medium text-gray-700 hover:text-shield-blue transition-colors">
+            <Link to="/how-it-works" className="text-sm font-medium text-gray-700 hover:text-shield-blue transition-colors">
               How it works
             </Link>
-            <Button 
-              variant="outline" 
-              className="border-shield-blue text-shield-blue hover:bg-shield-blue hover:text-white transition-all"
-            >
-              Sign In
-            </Button>
-            <Button className="bg-shield-blue text-white hover:bg-blue-600 transition-all">
-              Get Started
-            </Button>
+            <Link to="/signin" className="text-sm font-medium">
+              <Button 
+                variant="outline" 
+                className="border-shield-blue text-shield-blue hover:bg-shield-blue hover:text-white transition-all"
+              >
+                Sign In
+              </Button>
+            </Link>
+            <Link to="/get-started" className="text-sm font-medium">
+              <Button className="bg-shield-blue text-white hover:bg-blue-600 transition-all">
+                Get Started
+              </Button>
+            </Link>
           </nav>
 
           {/* Mobile Menu Button */}
@@ -75,38 +79,42 @@ const Navbar = () => {
         <div className="md:hidden glass absolute top-full left-0 right-0 border-t border-gray-100 animate-fade-in">
           <div className="px-4 py-5 space-y-4">
             <Link 
-              to="/" 
+              to="/home" 
               className="block text-base font-medium text-gray-700 hover:text-shield-blue transition-colors"
               onClick={() => setIsMobileMenuOpen(false)}
             >
               Home
             </Link>
             <Link 
-              to="/" 
+              to="/features" 
               className="block text-base font-medium text-gray-700 hover:text-shield-blue transition-colors"
               onClick={() => setIsMobileMenuOpen(false)}
             >
               Features
             </Link>
             <Link 
-              to="/" 
+              to="/how-it-works" 
               className="block text-base font-medium text-gray-700 hover:text-shield-blue transition-colors"
               onClick={() => setIsMobileMenuOpen(false)}
             >
               How it works
             </Link>
             <div className="pt-4 space-y-3">
-              <Button
-                variant="outline"
-                className="w-full justify-center border-shield-blue text-shield-blue hover:bg-shield-blue hover:text-white transition-all"
-              >
-                Sign In
-              </Button>
-              <Button 
-                className="w-full justify-center bg-shield-blue text-white hover:bg-blue-600 transition-all"
-              >
-                Get Started
-              </Button>
+              <Link to="/signin" className="block w-full" onClick={() => setIsMobileMenuOpen(false)}>
+                <Button
+                  variant="outline"
+                  className="w-full justify-center border-shield-blue text-shield-blue hover:bg-shield-blue hover:text-white transition-all"
+                >
+                  Sign In
+                </Button>
+              </Link>
+              <Link to="/get-started" className="block w-full" onClick={() => setIsMobileMenuOpen(false)}>
+                <Button 
+                  className="w-full justify-center bg-shield-blue text-white hover:bg-blue-600 transition-all"
+                >
+                  Get Started
+                </Button>
+              </Link>
             </div>
           </div>
         </div>
