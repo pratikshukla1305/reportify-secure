@@ -60,7 +60,10 @@ const UploadCard = ({ className }: UploadCardProps) => {
       </div>
       
       <div className="mt-6 flex justify-end">
-        <Button className="bg-shield-blue text-white hover:bg-blue-600 transition-all">
+        <Button 
+          to="/continue-report"
+          className="bg-shield-blue text-white hover:bg-blue-600 transition-all"
+        >
           Continue to Report
         </Button>
       </div>

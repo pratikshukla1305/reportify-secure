@@ -76,7 +76,10 @@ const CompareCard = ({ className }: CompareCardProps) => {
       </div>
       
       <div className="flex justify-end">
-        <Button className="bg-shield-blue text-white hover:bg-blue-600 transition-all">
+        <Button 
+          to="/generate-detailed-report"
+          className="bg-shield-blue text-white hover:bg-blue-600 transition-all"
+        >
           Generate Detailed Report
         </Button>
       </div>

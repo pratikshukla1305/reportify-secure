@@ -1,6 +1,5 @@
 
 import React, { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import Hero from '@/components/Hero';
 import Features from '@/components/Features';
@@ -11,11 +10,8 @@ import CompareCard from '@/components/CompareCard';
 import AuthButton from '@/components/AuthButton';
 import { Shield, ArrowUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Link } from 'react-router-dom';
 
 const Index = () => {
-  const navigate = useNavigate();
-  
   // Smooth scroll for anchor links
   useEffect(() => {
     const handleAnchorClick = (e: MouseEvent) => {
@@ -38,11 +34,6 @@ const Index = () => {
       document.removeEventListener('click', handleAnchorClick);
     };
   }, []);
-
-  // Navigation handlers for direct navigation
-  const handleNavigation = (path: string) => {
-    navigate(path);
-  };
 
   return (
     <div className="min-h-screen bg-white">
@@ -117,7 +108,7 @@ const Index = () => {
                 <Button 
                   size="lg" 
                   className="bg-shield-blue text-white hover:bg-blue-600 transition-all"
-                  onClick={() => handleNavigation('/connect-wallet')}
+                  to="/connect-wallet"
                 >
                   Connect Wallet
                 </Button>
@@ -125,7 +116,7 @@ const Index = () => {
                   size="lg" 
                   variant="outline" 
                   className="border-shield-blue text-shield-blue hover:bg-shield-blue hover:text-white transition-all"
-                  onClick={() => handleNavigation('/learn-about-rewards')}
+                  to="/learn-about-rewards"
                 >
                   Learn About Rewards
                 </Button>
@@ -217,7 +208,7 @@ const Index = () => {
                       <Button 
                         variant="outline" 
                         className="w-full border-shield-blue text-shield-blue hover:bg-shield-blue hover:text-white transition-all"
-                        onClick={() => handleNavigation('/view-all-rewards')}
+                        to="/view-all-rewards"
                       >
                         View All Rewards
                       </Button>
@@ -256,7 +247,7 @@ const Index = () => {
               <Button 
                 size="lg" 
                 className="bg-white text-shield-blue hover:bg-blue-50 transition-all"
-                onClick={() => handleNavigation('/get-started')}
+                to="/get-started"
               >
                 Get Started Now
               </Button>
@@ -264,7 +255,7 @@ const Index = () => {
                 size="lg" 
                 variant="outline" 
                 className="border-white text-white hover:bg-white/10 transition-all"
-                onClick={() => handleNavigation('/request-demo')}
+                to="/request-demo"
               >
                 Request a Demo
               </Button>
