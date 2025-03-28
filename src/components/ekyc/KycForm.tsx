@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -36,16 +35,7 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 type KycFormProps = {
-  formData: {
-    fullName: string;
-    dob: string;
-    nationality: string;
-    idType: string;
-    idNumber: string;
-    address: string;
-    phone: string;
-    email: string;
-  };
+  formData: FormValues;
   onSubmit: (data: FormValues) => void;
 };
 
@@ -53,14 +43,14 @@ const KycForm = ({ formData, onSubmit }: KycFormProps) => {
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      fullName: formData.fullName,
-      dob: formData.dob,
-      nationality: formData.nationality,
-      idType: formData.idType as 'passport' | 'national_id' | 'driving_license',
-      idNumber: formData.idNumber,
-      address: formData.address,
-      phone: formData.phone,
-      email: formData.email,
+      fullName: formData.fullName || '',
+      dob: formData.dob || '',
+      nationality: formData.nationality || '',
+      idType: formData.idType || 'passport',
+      idNumber: formData.idNumber || '',
+      address: formData.address || '',
+      phone: formData.phone || '',
+      email: formData.email || '',
     },
   });
 

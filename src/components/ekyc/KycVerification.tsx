@@ -8,13 +8,24 @@ import {
 } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { toast } from '@/hooks/use-toast';
+import { z } from 'zod';
+
+// Define the form schema to match KycForm
+const formSchema = z.object({
+  fullName: z.string(),
+  dob: z.string(),
+  nationality: z.string(),
+  idType: z.enum(['passport', 'national_id', 'driving_license']),
+  idNumber: z.string(),
+  address: z.string(),
+  phone: z.string(),
+  email: z.string(),
+});
+
+type FormValues = z.infer<typeof formSchema>;
 
 type KycVerificationProps = {
-  formData: {
-    fullName: string;
-    idType: string;
-    idNumber: string;
-  };
+  formData: FormValues;
   onComplete: () => void;
 };
 

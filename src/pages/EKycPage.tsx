@@ -5,10 +5,25 @@ import Footer from '@/components/Footer';
 import KycForm from '@/components/ekyc/KycForm';
 import KycVerification from '@/components/ekyc/KycVerification';
 import KycCompleted from '@/components/ekyc/KycCompleted';
+import { z } from 'zod';
+
+// Define the form schema to match KycForm
+const formSchema = z.object({
+  fullName: z.string().min(3, 'Full name must be at least 3 characters'),
+  dob: z.string().min(1, 'Date of birth is required'),
+  nationality: z.string().min(1, 'Nationality is required'),
+  idType: z.enum(['passport', 'national_id', 'driving_license']),
+  idNumber: z.string().min(1, 'ID number is required'),
+  address: z.string().min(1, 'Address is required'),
+  phone: z.string().min(1, 'Phone number is required'),
+  email: z.string().email('Invalid email address'),
+});
+
+type FormValues = z.infer<typeof formSchema>;
 
 const EKycPage = () => {
   const [currentStep, setCurrentStep] = useState<number>(1);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormValues>({
     fullName: '',
     dob: '',
     nationality: '',
@@ -19,7 +34,7 @@ const EKycPage = () => {
     email: '',
   });
 
-  const handleFormSubmit = (data: typeof formData) => {
+  const handleFormSubmit = (data: FormValues) => {
     setFormData(data);
     setCurrentStep(2);
   };
