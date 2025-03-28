@@ -1,6 +1,6 @@
 
 import React, { useState, useRef } from 'react';
-import { Camera, Upload, Check, AlertCircle, RefreshCw } from 'lucide-react';
+import { Camera, Check, AlertCircle, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -10,7 +10,7 @@ import { Progress } from '@/components/ui/progress';
 import { toast } from '@/hooks/use-toast';
 import { z } from 'zod';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 
 // Define the form schema to match KycForm
 const formSchema = z.object({
@@ -31,6 +31,21 @@ type KycVerificationProps = {
   onComplete: () => void;
 };
 
+// Mock data for extracted information
+const mockExtractedInfo = {
+  idFront: {
+    fullName: "John Smith",
+    idNumber: "AB123456789",
+    dob: "1990-05-15",
+    nationality: "United States"
+  },
+  idBack: {
+    address: "123 Main Street, New York, NY 10001",
+    issueDate: "2020-01-01",
+    expiryDate: "2030-01-01"
+  }
+};
+
 const KycVerification = ({ formData, onComplete }: KycVerificationProps) => {
   const [idFrontUploaded, setIdFrontUploaded] = useState(false);
   const [idBackUploaded, setIdBackUploaded] = useState(false);
@@ -40,6 +55,10 @@ const KycVerification = ({ formData, onComplete }: KycVerificationProps) => {
   const [showCamera, setShowCamera] = useState(false);
   const [captureType, setCaptureType] = useState<'selfie' | 'idFront' | 'idBack' | null>(null);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
+  const [extractedInfo, setExtractedInfo] = useState<any>(null);
+  const [showExtractedInfo, setShowExtractedInfo] = useState(false);
+  const [mismatchFields, setMismatchFields] = useState<string[]>([]);
+  
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const isMobile = useIsMobile();
@@ -48,6 +67,7 @@ const KycVerification = ({ formData, onComplete }: KycVerificationProps) => {
     setCaptureType(type);
     setShowCamera(true);
     setCapturedImage(null);
+    setShowExtractedInfo(false);
     
     // Start camera
     setTimeout(() => {
@@ -142,69 +162,105 @@ const KycVerification = ({ formData, onComplete }: KycVerificationProps) => {
         const imageDataUrl = canvas.toDataURL('image/jpeg');
         setCapturedImage(imageDataUrl);
         
-        // Update state based on capture type
-        if (captureType === 'selfie') {
-          setSelfieUploaded(true);
-          toast({
-            title: "Selfie captured",
-            description: "Your selfie was successfully captured.",
-          });
-        } else if (captureType === 'idFront') {
-          setIdFrontUploaded(true);
-          toast({
-            title: "ID Front captured",
-            description: "Front of your ID was successfully captured.",
-          });
-        } else if (captureType === 'idBack') {
-          setIdBackUploaded(true);
-          toast({
-            title: "ID Back captured",
-            description: "Back of your ID was successfully captured.",
-          });
-        }
-        
-        stopCamera();
+        // Simulate AI extraction of data from the image
+        simulateDataExtraction();
       }
     }
   };
-  
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'idFront' | 'idBack' | 'selfie') => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+
+  const simulateDataExtraction = () => {
+    // Show loading state for extraction
+    toast({
+      title: "Processing image",
+      description: "Extracting information from your ID...",
+    });
     
-    // Simulate upload
+    // Simulate processing delay
     setTimeout(() => {
-      switch (type) {
-        case 'idFront':
+      if (captureType === 'idFront') {
+        setExtractedInfo(mockExtractedInfo.idFront);
+        
+        // Check for mismatches
+        const mismatches = [];
+        if (mockExtractedInfo.idFront.fullName !== formData.fullName) mismatches.push('fullName');
+        if (mockExtractedInfo.idFront.idNumber !== formData.idNumber) mismatches.push('idNumber');
+        if (mockExtractedInfo.idFront.dob !== formData.dob) mismatches.push('dob');
+        if (mockExtractedInfo.idFront.nationality !== formData.nationality) mismatches.push('nationality');
+        
+        setMismatchFields(mismatches);
+        setShowExtractedInfo(true);
+        
+        if (mismatches.length > 0) {
+          toast({
+            title: "Information mismatch",
+            description: "Some information doesn't match what you provided.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Information verified",
+            description: "All information matches your provided details.",
+          });
           setIdFrontUploaded(true);
+          stopCamera();
+        }
+      } 
+      else if (captureType === 'idBack') {
+        setExtractedInfo(mockExtractedInfo.idBack);
+        
+        // Check for mismatches
+        const mismatches = [];
+        if (mockExtractedInfo.idBack.address !== formData.address) mismatches.push('address');
+        
+        setMismatchFields(mismatches);
+        setShowExtractedInfo(true);
+        
+        if (mismatches.length > 0) {
           toast({
-            title: "Front side uploaded",
-            description: "Your ID front side was successfully uploaded.",
+            title: "Information mismatch",
+            description: "Some information doesn't match what you provided.",
+            variant: "destructive",
           });
-          break;
-        case 'idBack':
+        } else {
+          toast({
+            title: "Information verified",
+            description: "All information matches your provided details.",
+          });
           setIdBackUploaded(true);
-          toast({
-            title: "Back side uploaded",
-            description: "Your ID back side was successfully uploaded.",
-          });
-          break;
-        case 'selfie':
-          setSelfieUploaded(true);
-          toast({
-            title: "Selfie uploaded",
-            description: "Your selfie was successfully uploaded.",
-          });
-          break;
+          stopCamera();
+        }
       }
-    }, 1000);
+      else if (captureType === 'selfie') {
+        // For selfie, just verify it's a face
+        toast({
+          title: "Face detected",
+          description: "Your selfie has been captured successfully.",
+        });
+        setSelfieUploaded(true);
+        stopCamera();
+      }
+    }, 2000);
+  };
+  
+  const confirmExtractedInfo = () => {
+    if (captureType === 'idFront') {
+      setIdFrontUploaded(true);
+    } else if (captureType === 'idBack') {
+      setIdBackUploaded(true);
+    }
+    
+    stopCamera();
+    toast({
+      title: "Information confirmed",
+      description: "Thank you for confirming your information.",
+    });
   };
 
   const startVerification = () => {
     if (!idFrontUploaded || !idBackUploaded || !selfieUploaded) {
       toast({
-        title: "Incomplete uploads",
-        description: "Please upload all required documents before proceeding.",
+        title: "Incomplete captures",
+        description: "Please capture all required images before proceeding.",
         variant: "destructive",
       });
       return;
@@ -258,24 +314,54 @@ const KycVerification = ({ formData, onComplete }: KycVerificationProps) => {
               <div className="absolute inset-0 border-4 border-dashed border-white/50 rounded-full m-4 pointer-events-none"></div>
             )}
             
-            {captureType === 'idFront' && (
+            {(captureType === 'idFront' || captureType === 'idBack') && (
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                 <div className="text-white text-center bg-black/70 p-2 rounded-md">
-                  <p>Hold your ID in your hand</p>
-                  <p>Make sure all details are clearly visible</p>
-                </div>
-              </div>
-            )}
-            
-            {captureType === 'idBack' && (
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div className="text-white text-center bg-black/70 p-2 rounded-md">
+                  <p className="font-bold">IMPORTANT</p>
                   <p>Hold your ID in your hand</p>
                   <p>Make sure all details are clearly visible</p>
                 </div>
               </div>
             )}
           </div>
+          
+          {capturedImage && (
+            <div className="mt-4">
+              <div className="relative bg-black rounded-md overflow-hidden">
+                <img src={capturedImage} alt="Captured" className="w-full h-auto" />
+              </div>
+            </div>
+          )}
+          
+          {showExtractedInfo && (
+            <div className="mt-4 bg-white p-4 rounded-md">
+              <h4 className="font-medium mb-2">Extracted Information:</h4>
+              <ul className="space-y-1">
+                {Object.entries(extractedInfo).map(([key, value]) => (
+                  <li key={key} className={`flex items-center justify-between ${mismatchFields.includes(key) ? 'text-red-500' : 'text-green-500'}`}>
+                    <span className="capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}:</span>
+                    <span>{String(value)}</span>
+                    {mismatchFields.includes(key) && (
+                      <span className="text-xs text-red-500">Mismatch</span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+              
+              {mismatchFields.length > 0 && (
+                <div className="mt-4 p-2 bg-red-50 text-red-700 rounded-md text-sm">
+                  <p>Some information doesn't match with what you provided earlier. Please review and confirm.</p>
+                </div>
+              )}
+              
+              <Button 
+                onClick={confirmExtractedInfo} 
+                className="mt-4 w-full bg-shield-blue text-white"
+              >
+                Confirm Information
+              </Button>
+            </div>
+          )}
           
           <div className="flex justify-between mt-4">
             <Button variant="outline" onClick={stopCamera}>
@@ -288,9 +374,11 @@ const KycVerification = ({ formData, onComplete }: KycVerificationProps) => {
               </Button>
             )}
             
-            <Button onClick={captureImage} className="bg-shield-blue text-white">
-              Capture
-            </Button>
+            {!capturedImage && (
+              <Button onClick={captureImage} className="bg-shield-blue text-white">
+                Capture
+              </Button>
+            )}
           </div>
         </div>
       </DialogContent>
@@ -302,9 +390,9 @@ const KycVerification = ({ formData, onComplete }: KycVerificationProps) => {
       <h2 className="text-2xl font-semibold text-center mb-6">Identity Verification</h2>
       
       <div className="mb-8">
-        <h3 className="text-lg font-medium mb-4">Upload Required Documents</h3>
+        <h3 className="text-lg font-medium mb-4">Capture Required Documents</h3>
         <p className="text-gray-600 mb-6">
-          Please upload clear images of your {formData.idType.replace('_', ' ')} and a selfie for verification.
+          Please capture clear images of your {formData.idType.replace('_', ' ')} and a selfie for verification.
           <strong> For security purposes, you need to hold your ID in your hand when taking the photos.</strong>
         </p>
         
@@ -328,35 +416,15 @@ const KycVerification = ({ formData, onComplete }: KycVerificationProps) => {
               <p className="text-sm text-gray-500 text-center mb-4">
                 Show the front side clearly while holding it in your hand
               </p>
-              <div className="flex flex-col gap-2">
-                <Button 
-                  variant={idFrontUploaded ? "outline" : "default"} 
-                  className={idFrontUploaded ? "border-green-500 text-green-500" : "bg-shield-blue text-white"}
-                  disabled={idFrontUploaded}
-                  onClick={() => openCamera('idFront')}
-                >
-                  {idFrontUploaded ? "Captured" : "Take Photo"}
-                  <Camera className="ml-2 h-4 w-4" />
-                </Button>
-                
-                <div className="relative">
-                  <Button 
-                    variant="outline"
-                    className="w-full"
-                    disabled={idFrontUploaded}
-                  >
-                    Upload File
-                    <Upload className="ml-2 h-4 w-4" />
-                  </Button>
-                  <input 
-                    type="file" 
-                    className="absolute inset-0 opacity-0 cursor-pointer"
-                    accept="image/*"
-                    onChange={(e) => handleFileChange(e, 'idFront')}
-                    disabled={idFrontUploaded}
-                  />
-                </div>
-              </div>
+              <Button 
+                variant={idFrontUploaded ? "outline" : "default"} 
+                className={idFrontUploaded ? "border-green-500 text-green-500" : "bg-shield-blue text-white"}
+                disabled={idFrontUploaded}
+                onClick={() => openCamera('idFront')}
+              >
+                {idFrontUploaded ? "Captured" : "Take Photo"}
+                <Camera className="ml-2 h-4 w-4" />
+              </Button>
             </CardContent>
           </Card>
 
@@ -379,35 +447,15 @@ const KycVerification = ({ formData, onComplete }: KycVerificationProps) => {
               <p className="text-sm text-gray-500 text-center mb-4">
                 Show the back side clearly while holding it in your hand
               </p>
-              <div className="flex flex-col gap-2">
-                <Button 
-                  variant={idBackUploaded ? "outline" : "default"} 
-                  className={idBackUploaded ? "border-green-500 text-green-500" : "bg-shield-blue text-white"}
-                  disabled={idBackUploaded}
-                  onClick={() => openCamera('idBack')}
-                >
-                  {idBackUploaded ? "Captured" : "Take Photo"}
-                  <Camera className="ml-2 h-4 w-4" />
-                </Button>
-                
-                <div className="relative">
-                  <Button 
-                    variant="outline"
-                    className="w-full"
-                    disabled={idBackUploaded}
-                  >
-                    Upload File
-                    <Upload className="ml-2 h-4 w-4" />
-                  </Button>
-                  <input 
-                    type="file" 
-                    className="absolute inset-0 opacity-0 cursor-pointer"
-                    accept="image/*"
-                    onChange={(e) => handleFileChange(e, 'idBack')}
-                    disabled={idBackUploaded}
-                  />
-                </div>
-              </div>
+              <Button 
+                variant={idBackUploaded ? "outline" : "default"} 
+                className={idBackUploaded ? "border-green-500 text-green-500" : "bg-shield-blue text-white"}
+                disabled={idBackUploaded}
+                onClick={() => openCamera('idBack')}
+              >
+                {idBackUploaded ? "Captured" : "Take Photo"}
+                <Camera className="ml-2 h-4 w-4" />
+              </Button>
             </CardContent>
           </Card>
 
@@ -430,35 +478,15 @@ const KycVerification = ({ formData, onComplete }: KycVerificationProps) => {
               <p className="text-sm text-gray-500 text-center mb-4">
                 Take a clear selfie of your face
               </p>
-              <div className="flex flex-col gap-2">
-                <Button 
-                  variant={selfieUploaded ? "outline" : "default"} 
-                  className={selfieUploaded ? "border-green-500 text-green-500" : "bg-shield-blue text-white"}
-                  disabled={selfieUploaded}
-                  onClick={() => openCamera('selfie')}
-                >
-                  {selfieUploaded ? "Captured" : "Take Photo"}
-                  <Camera className="ml-2 h-4 w-4" />
-                </Button>
-                
-                <div className="relative">
-                  <Button 
-                    variant="outline"
-                    className="w-full"
-                    disabled={selfieUploaded}
-                  >
-                    Upload File
-                    <Upload className="ml-2 h-4 w-4" />
-                  </Button>
-                  <input 
-                    type="file" 
-                    className="absolute inset-0 opacity-0 cursor-pointer"
-                    accept="image/*"
-                    onChange={(e) => handleFileChange(e, 'selfie')}
-                    disabled={selfieUploaded}
-                  />
-                </div>
-              </div>
+              <Button 
+                variant={selfieUploaded ? "outline" : "default"} 
+                className={selfieUploaded ? "border-green-500 text-green-500" : "bg-shield-blue text-white"}
+                disabled={selfieUploaded}
+                onClick={() => openCamera('selfie')}
+              >
+                {selfieUploaded ? "Captured" : "Take Photo"}
+                <Camera className="ml-2 h-4 w-4" />
+              </Button>
             </CardContent>
           </Card>
         </div>
@@ -480,7 +508,7 @@ const KycVerification = ({ formData, onComplete }: KycVerificationProps) => {
           <div className="flex">
             <AlertCircle className="h-5 w-5 text-shield-blue mr-2 flex-shrink-0" />
             <div className="text-sm text-gray-700">
-              <strong>Important:</strong> Please ensure all uploaded documents are:
+              <strong>Important:</strong> Please ensure all captured documents are:
               <ul className="list-disc ml-5 mt-1">
                 <li>Clear and readable</li>
                 <li>Not expired</li>
