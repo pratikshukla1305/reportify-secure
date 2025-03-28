@@ -45,6 +45,9 @@ const Navbar = () => {
             <Link to="/how-it-works" className="text-sm font-medium text-gray-700 hover:text-shield-blue transition-colors">
               How it works
             </Link>
+            <Link to="/e-kyc" className="text-sm font-medium text-gray-700 hover:text-shield-blue transition-colors">
+              e-KYC
+            </Link>
             <Link to="/signin" className="text-sm font-medium">
               <Button 
                 variant="outline" 
@@ -98,6 +101,13 @@ const Navbar = () => {
               onClick={() => setIsMobileMenuOpen(false)}
             >
               How it works
+            </Link>
+            <Link 
+              to="/e-kyc" 
+              className="block text-base font-medium text-gray-700 hover:text-shield-blue transition-colors"
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              e-KYC
             </Link>
             <div className="pt-4 space-y-3">
               <Link to="/signin" className="block w-full" onClick={() => setIsMobileMenuOpen(false)}>

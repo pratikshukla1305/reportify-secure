@@ -20,6 +20,7 @@ import ConnectWallet from "./pages/ConnectWallet";
 import LearnAboutRewards from "./pages/LearnAboutRewards";
 import ViewAllRewards from "./pages/ViewAllRewards";
 import RequestDemo from "./pages/RequestDemo";
+import EKycPage from "./pages/EKycPage";
 
 const queryClient = new QueryClient();
 
@@ -45,6 +46,7 @@ const App = () => (
           <Route path="/learn-about-rewards" element={<LearnAboutRewards />} />
           <Route path="/view-all-rewards" element={<ViewAllRewards />} />
           <Route path="/request-demo" element={<RequestDemo />} />
+          <Route path="/e-kyc" element={<EKycPage />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
