@@ -27,6 +27,9 @@ const MapComponent = ({
   const [mapLoaded, setMapLoaded] = useState(false);
   
   useEffect(() => {
+    // Set default token to window object
+    window.DEFAULT_MAPBOX_TOKEN = "pk.eyJ1Ijoic2h1ZW5jZSIsImEiOiJjbG9wcmt3czMwYnZsMmtvNnpmNTRqdnl6In0.vLBhYMBZBl2kaOh1Fh44Bw";
+    
     // Check if mapboxgl is available (this would normally be imported from mapbox-gl)
     if (!window.mapboxgl) {
       // If mapbox isn't available yet, let's create a script to load it
@@ -63,8 +66,8 @@ const MapComponent = ({
   const initializeMap = () => {
     if (!mapContainer.current) return;
     
-    // Try to get token from localStorage first
-    const storedToken = localStorage.getItem('mapbox_token');
+    // Try to get token from localStorage first, or use default token
+    const storedToken = localStorage.getItem('mapbox_token') || window.DEFAULT_MAPBOX_TOKEN;
     
     if (!storedToken) {
       // If no token, display a placeholder map with a message

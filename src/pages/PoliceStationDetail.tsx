@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
@@ -59,6 +58,14 @@ const PoliceStationDetail = () => {
           });
         }
       );
+    }
+    
+    // Check if a default token is available
+    if (window.DEFAULT_MAPBOX_TOKEN) {
+      toast({
+        title: "Using default Mapbox token",
+        description: "A default Mapbox token is being used. You can set your own token if needed.",
+      });
     }
     
     setLoading(false);

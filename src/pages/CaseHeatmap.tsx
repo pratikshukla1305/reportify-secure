@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -41,22 +40,25 @@ const CaseHeatmap = () => {
   const [tokenInputVisible, setTokenInputVisible] = useState(false);
   const [isMapView, setIsMapView] = useState(true);
 
-  // Filter case data based on selections
   const filteredCaseData = caseDensityData.filter(item => {
     const matchesType = selectedCaseType === "all" || item.type === selectedCaseType;
-    // In a real app, we would apply time range filter as well
     return matchesType;
   });
 
-  // Calculate stats
   const totalCases = filteredCaseData.reduce((sum, item) => sum + item.count, 0);
   const highestDensityArea = [...filteredCaseData].sort((a, b) => b.count - a.count)[0]?.location || "N/A";
 
   useEffect(() => {
-    // Simulate loading delay
     const timer = setTimeout(() => {
       setLoading(false);
     }, 1500);
+    
+    if (window.DEFAULT_MAPBOX_TOKEN) {
+      toast({
+        title: "Using default Mapbox token",
+        description: "A default Mapbox token is being used. You can set your own token if needed.",
+      });
+    }
     
     return () => clearTimeout(timer);
   }, []);
