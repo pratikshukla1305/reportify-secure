@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { AlertCircle, AlertTriangle } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -14,13 +14,12 @@ const SOSButton = ({ onClick, className }: SOSButtonProps) => {
     <Button
       onClick={onClick}
       className={cn(
-        "bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-full shadow-lg animate-pulse",
+        "bg-red-600 hover:bg-red-700 text-white font-bold rounded-full shadow-lg flex items-center justify-center gap-1 animate-pulse",
         className
       )}
-      size="lg"
     >
-      <AlertCircle className="mr-2 h-6 w-6" />
-      <span className="text-lg font-bold">SOS</span>
+      <AlertTriangle className="h-4 w-4" />
+      <span className="font-bold">SOS</span>
     </Button>
   );
 };

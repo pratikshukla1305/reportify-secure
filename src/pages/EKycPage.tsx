@@ -1,119 +1,131 @@
 
 import React, { useState } from 'react';
-import Navbar from '@/components/Navbar';
-import Footer from '@/components/Footer';
+import { useNavigate } from 'react-router-dom';
+import { 
+  Tabs, 
+  TabsContent, 
+  TabsList, 
+  TabsTrigger 
+} from '@/components/ui/tabs';
 import KycForm from '@/components/ekyc/KycForm';
 import KycVerification from '@/components/ekyc/KycVerification';
 import KycCompleted from '@/components/ekyc/KycCompleted';
-import { z } from 'zod';
+import Navbar from '@/components/Navbar';
+import Footer from '@/components/Footer';
 
-// Define the form schema to match KycForm
-const formSchema = z.object({
-  fullName: z.string().min(3, 'Full name must be at least 3 characters'),
-  dob: z.string().min(1, 'Date of birth is required'),
-  nationality: z.string().min(1, 'Nationality is required'),
-  idType: z.enum(['passport', 'national_id', 'driving_license']),
-  idNumber: z.string().min(1, 'ID number is required'),
-  address: z.string().min(1, 'Address is required'),
-  phone: z.string().min(1, 'Phone number is required'),
-  email: z.string().email('Invalid email address'),
-});
-
-type FormValues = z.infer<typeof formSchema>;
+type KycData = {
+  fullName: string;
+  dob: string;
+  nationality: string;
+  idType: "passport" | "national_id" | "driving_license";
+  idNumber: string;
+  address: string;
+  phone: string;
+  email: string;
+};
 
 const EKycPage = () => {
-  const [currentStep, setCurrentStep] = useState<number>(1);
-  const [formData, setFormData] = useState<FormValues>({
-    fullName: '',
-    dob: '',
-    nationality: '',
-    idType: 'passport',
-    idNumber: '',
-    address: '',
-    phone: '',
-    email: '',
+  const navigate = useNavigate();
+  const [currentStep, setCurrentStep] = useState<string>("form");
+  const [kycData, setKycData] = useState<KycData>({
+    fullName: "",
+    dob: "",
+    nationality: "",
+    idType: "national_id",
+    idNumber: "",
+    address: "",
+    phone: "",
+    email: ""
   });
+  const [uploadedDocuments, setUploadedDocuments] = useState<{
+    idFront?: File;
+    idBack?: File;
+    selfie?: File;
+  }>({});
 
-  const handleFormSubmit = (data: FormValues) => {
-    setFormData(data);
-    setCurrentStep(2);
+  const handleFormSubmit = (data: KycData) => {
+    setKycData(data);
+    setCurrentStep("verification");
   };
 
-  const handleVerificationComplete = () => {
-    setCurrentStep(3);
+  const handleVerificationSubmit = (documents: {
+    idFront?: File;
+    idBack?: File;
+    selfie?: File;
+  }) => {
+    setUploadedDocuments(documents);
+    setCurrentStep("completed");
   };
 
-  const resetForm = () => {
-    setFormData({
-      fullName: '',
-      dob: '',
-      nationality: '',
-      idType: 'passport',
-      idNumber: '',
-      address: '',
-      phone: '',
-      email: '',
-    });
-    setCurrentStep(1);
+  const handleKycCompleted = () => {
+    // In a real application, you would send the KYC data and documents to your backend
+    // and then redirect the user to a success page or dashboard
+    navigate("/home");
   };
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Navbar />
-      <div className="flex-grow mt-20 container max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="mb-12 text-center">
-          <h1 className="text-3xl font-bold text-shield-dark mb-4">Electronic Know Your Customer (e-KYC)</h1>
-          <p className="text-gray-600 max-w-3xl mx-auto">
-            Secure and efficient verification of your identity through our blockchain-powered e-KYC system.
-            This process helps us protect your account and comply with regulatory requirements.
-          </p>
-        </div>
-
-        {/* Progress indicator */}
-        <div className="mb-12">
-          <div className="flex items-center justify-center">
-            <div className="flex items-center">
-              <div className={`flex items-center justify-center w-10 h-10 rounded-full ${currentStep >= 1 ? 'bg-shield-blue text-white' : 'bg-gray-200 text-gray-600'}`}>
-                1
-              </div>
-              <div className={`h-1 w-16 sm:w-24 ${currentStep >= 2 ? 'bg-shield-blue' : 'bg-gray-200'}`}></div>
-            </div>
-            <div className="flex items-center">
-              <div className={`flex items-center justify-center w-10 h-10 rounded-full ${currentStep >= 2 ? 'bg-shield-blue text-white' : 'bg-gray-200 text-gray-600'}`}>
-                2
-              </div>
-              <div className={`h-1 w-16 sm:w-24 ${currentStep >= 3 ? 'bg-shield-blue' : 'bg-gray-200'}`}></div>
-            </div>
-            <div className="flex items-center">
-              <div className={`flex items-center justify-center w-10 h-10 rounded-full ${currentStep >= 3 ? 'bg-shield-blue text-white' : 'bg-gray-200 text-gray-600'}`}>
-                3
-              </div>
-            </div>
+      
+      <main className="flex-1 container max-w-5xl mx-auto px-4 py-24 sm:px-6 sm:py-32 lg:px-8">
+        <div className="bg-white shadow-xl rounded-lg overflow-hidden">
+          <div className="p-6 sm:p-10">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
+              Electronic Know Your Customer (e-KYC)
+            </h1>
+            <p className="text-gray-600 mb-8">
+              Complete the verification process to access all features of Midshield.
+            </p>
+            
+            <Tabs value={currentStep} onValueChange={setCurrentStep} className="w-full">
+              <TabsList className="grid w-full grid-cols-3 mb-8">
+                <TabsTrigger 
+                  value="form" 
+                  disabled={currentStep !== "form"}
+                  className="data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700"
+                >
+                  1. Personal Information
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="verification" 
+                  disabled={currentStep !== "verification" && currentStep !== "completed"}
+                  className="data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700"
+                >
+                  2. Document Verification
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="completed" 
+                  disabled={currentStep !== "completed"}
+                  className="data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700"
+                >
+                  3. Verification Complete
+                </TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="form" className="mt-0">
+                <KycForm onSubmit={handleFormSubmit} initialData={kycData} />
+              </TabsContent>
+              
+              <TabsContent value="verification" className="mt-0">
+                <KycVerification 
+                  onSubmit={handleVerificationSubmit} 
+                  userData={kycData}
+                  initialDocuments={uploadedDocuments}
+                />
+              </TabsContent>
+              
+              <TabsContent value="completed" className="mt-0">
+                <KycCompleted 
+                  userData={kycData} 
+                  documents={uploadedDocuments}
+                  onComplete={handleKycCompleted}
+                />
+              </TabsContent>
+            </Tabs>
           </div>
-          <div className="flex justify-center mt-2 text-sm font-medium text-gray-600">
-            <div className="w-28 text-center">Personal Information</div>
-            <div className="w-28 text-center">Verification</div>
-            <div className="w-28 text-center">Completion</div>
-          </div>
         </div>
-
-        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-          {currentStep === 1 && (
-            <KycForm formData={formData} onSubmit={handleFormSubmit} />
-          )}
-          
-          {currentStep === 2 && (
-            <KycVerification 
-              formData={formData} 
-              onComplete={handleVerificationComplete} 
-            />
-          )}
-          
-          {currentStep === 3 && (
-            <KycCompleted onReset={resetForm} />
-          )}
-        </div>
-      </div>
+      </main>
+      
       <Footer />
     </div>
   );

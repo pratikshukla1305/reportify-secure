@@ -1,9 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Shield, Menu, X, MapPin } from 'lucide-react';
+import { Shield, Menu, X, MapPin, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import SOSButton from '@/components/sos/SOSButton';
+import SOSModal from '@/components/sos/SOSModal';
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -15,6 +17,8 @@ import {
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [showSOSModal, setShowSOSModal] = useState(false);
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -29,6 +33,31 @@ const Navbar = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  const handleSOSClick = () => {
+    // Get user location when SOS is clicked
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUserLocation({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          });
+          setShowSOSModal(true);
+        },
+        (error) => {
+          console.error("Error getting location:", error);
+          // Show modal anyway but without location
+          setUserLocation(null);
+          setShowSOSModal(true);
+        }
+      );
+    } else {
+      console.error("Geolocation is not supported by this browser.");
+      setUserLocation(null);
+      setShowSOSModal(true);
+    }
+  };
+
   return (
     <header className={cn(
       'fixed top-0 left-0 right-0 z-50 transition-all duration-300 ease-in-out',
@@ -42,7 +71,7 @@ const Navbar = () => {
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center space-x-8">
+          <nav className="hidden md:flex items-center space-x-6">
             <Link to="/home" className="text-sm font-medium text-gray-700 hover:text-shield-blue transition-colors">
               Home
             </Link>
@@ -97,6 +126,10 @@ const Navbar = () => {
             <Link to="/e-kyc" className="text-sm font-medium text-gray-700 hover:text-shield-blue transition-colors">
               e-KYC
             </Link>
+            
+            {/* SOS Button in Navbar */}
+            <SOSButton onClick={handleSOSClick} className="scale-90" />
+            
             <Link to="/signin" className="text-sm font-medium">
               <Button 
                 variant="outline" 
@@ -113,16 +146,19 @@ const Navbar = () => {
           </nav>
 
           {/* Mobile Menu Button */}
-          <button
-            className="md:hidden text-gray-700"
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          >
-            {isMobileMenuOpen ? (
-              <X className="h-6 w-6" />
-            ) : (
-              <Menu className="h-6 w-6" />
-            )}
-          </button>
+          <div className="md:hidden flex items-center space-x-3">
+            <SOSButton onClick={handleSOSClick} className="scale-75" />
+            <button
+              className="text-gray-700"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            >
+              {isMobileMenuOpen ? (
+                <X className="h-6 w-6" />
+              ) : (
+                <Menu className="h-6 w-6" />
+              )}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -195,6 +231,13 @@ const Navbar = () => {
           </div>
         </div>
       )}
+
+      {/* SOS Modal */}
+      <SOSModal 
+        open={showSOSModal} 
+        onOpenChange={setShowSOSModal} 
+        userLocation={userLocation} 
+      />
     </header>
   );
 };
