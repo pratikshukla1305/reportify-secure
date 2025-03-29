@@ -21,6 +21,9 @@ import LearnAboutRewards from "./pages/LearnAboutRewards";
 import ViewAllRewards from "./pages/ViewAllRewards";
 import RequestDemo from "./pages/RequestDemo";
 import EKycPage from "./pages/EKycPage";
+import PoliceStationsMap from "./pages/PoliceStationsMap";
+import CaseHeatmap from "./pages/CaseHeatmap";
+import PoliceStationDetail from "./pages/PoliceStationDetail";
 
 const queryClient = new QueryClient();
 
@@ -47,6 +50,9 @@ const App = () => (
           <Route path="/view-all-rewards" element={<ViewAllRewards />} />
           <Route path="/request-demo" element={<RequestDemo />} />
           <Route path="/e-kyc" element={<EKycPage />} />
+          <Route path="/police-stations" element={<PoliceStationsMap />} />
+          <Route path="/case-heatmap" element={<CaseHeatmap />} />
+          <Route path="/police-station/:id" element={<PoliceStationDetail />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

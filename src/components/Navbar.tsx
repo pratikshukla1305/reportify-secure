@@ -1,9 +1,16 @@
 
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Shield, Menu, X } from 'lucide-react';
+import { Shield, Menu, X, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import {
+  NavigationMenu,
+  NavigationMenuContent,
+  NavigationMenuItem,
+  NavigationMenuList,
+  NavigationMenuTrigger,
+} from "@/components/ui/navigation-menu";
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -45,6 +52,48 @@ const Navbar = () => {
             <Link to="/how-it-works" className="text-sm font-medium text-gray-700 hover:text-shield-blue transition-colors">
               How it works
             </Link>
+            <NavigationMenu>
+              <NavigationMenuList>
+                <NavigationMenuItem>
+                  <NavigationMenuTrigger className="text-sm font-medium text-gray-700 hover:text-shield-blue transition-colors">
+                    <div className="flex items-center">
+                      <MapPin className="mr-1 h-4 w-4" />
+                      Locate
+                    </div>
+                  </NavigationMenuTrigger>
+                  <NavigationMenuContent className="bg-white">
+                    <div className="grid gap-3 p-4 w-[400px]">
+                      <Link 
+                        to="/police-stations" 
+                        className="flex items-center space-x-2 rounded-md p-2 hover:bg-gray-100"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        <div className="bg-blue-100 p-2 rounded-full">
+                          <MapPin className="h-4 w-4 text-shield-blue" />
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-medium">Nearby Police Stations</h4>
+                          <p className="text-xs text-gray-500">Find police stations near your location</p>
+                        </div>
+                      </Link>
+                      <Link 
+                        to="/case-heatmap" 
+                        className="flex items-center space-x-2 rounded-md p-2 hover:bg-gray-100"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        <div className="bg-red-100 p-2 rounded-full">
+                          <MapPin className="h-4 w-4 text-red-500" />
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-medium">Case Density Map</h4>
+                          <p className="text-xs text-gray-500">View case reporting density across regions</p>
+                        </div>
+                      </Link>
+                    </div>
+                  </NavigationMenuContent>
+                </NavigationMenuItem>
+              </NavigationMenuList>
+            </NavigationMenu>
             <Link to="/e-kyc" className="text-sm font-medium text-gray-700 hover:text-shield-blue transition-colors">
               e-KYC
             </Link>
@@ -102,6 +151,23 @@ const Navbar = () => {
             >
               How it works
             </Link>
+            <div className="border-t border-gray-100 pt-2">
+              <p className="text-base font-medium text-gray-700 mb-2">Locate</p>
+              <Link
+                to="/police-stations"
+                className="block ml-4 py-2 text-sm text-gray-600 hover:text-shield-blue"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Nearby Police Stations
+              </Link>
+              <Link
+                to="/case-heatmap"
+                className="block ml-4 py-2 text-sm text-gray-600 hover:text-shield-blue"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Case Density Map
+              </Link>
+            </div>
             <Link 
               to="/e-kyc" 
               className="block text-base font-medium text-gray-700 hover:text-shield-blue transition-colors"
