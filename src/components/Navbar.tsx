@@ -13,6 +13,12 @@ import {
   NavigationMenuList,
   NavigationMenuTrigger,
 } from "@/components/ui/navigation-menu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -127,6 +133,15 @@ const Navbar = () => {
               e-KYC
             </Link>
             
+            {/* Help Us Link */}
+            <Link 
+              to="/help-us" 
+              className="text-sm font-medium text-gray-700 hover:text-shield-blue transition-colors flex items-center"
+            >
+              <AlertCircle className="mr-1 h-4 w-4" />
+              Help Us
+            </Link>
+            
             {/* SOS Button in Navbar */}
             <SOSButton onClick={handleSOSClick} className="scale-90" />
             
@@ -211,6 +226,17 @@ const Navbar = () => {
             >
               e-KYC
             </Link>
+            
+            {/* Help Us Mobile Link */}
+            <Link 
+              to="/help-us" 
+              className="block text-base font-medium text-gray-700 hover:text-shield-blue transition-colors flex items-center"
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              <AlertCircle className="mr-1 h-4 w-4" />
+              Help Us
+            </Link>
+            
             <div className="pt-4 space-y-3">
               <Link to="/signin" className="block w-full" onClick={() => setIsMobileMenuOpen(false)}>
                 <Button
