@@ -9,6 +9,8 @@ import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/use-toast';
 import MapComponent from '@/components/maps/MapComponent';
 import PoliceStationCard from '@/components/maps/PoliceStationCard';
+import SOSButton from '@/components/sos/SOSButton';
+import SOSModal from '@/components/sos/SOSModal';
 import { policeStations } from '@/data/policeStations';
 
 const PoliceStationsMap = () => {
@@ -18,6 +20,7 @@ const PoliceStationsMap = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [mapboxToken, setMapboxToken] = useState<string | null>(null);
   const [tokenInputVisible, setTokenInputVisible] = useState(false);
+  const [sosModalOpen, setSOSModalOpen] = useState(false);
 
   // Filter police stations based on search query
   const filteredStations = searchQuery 
@@ -83,6 +86,43 @@ const PoliceStationsMap = () => {
         title: "Mapbox token saved",
         description: "Your Mapbox token has been saved for this session.",
       });
+    }
+  };
+
+  const handleSOSClick = () => {
+    // Check if we have location access before opening modal
+    if (!userLocation) {
+      if (navigator.geolocation) {
+        toast({
+          title: "Getting your location",
+          description: "Please allow location access for SOS feature",
+        });
+        
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            setUserLocation({
+              lat: position.coords.latitude,
+              lng: position.coords.longitude
+            });
+            setSOSModalOpen(true);
+          },
+          (error) => {
+            toast({
+              title: "Location access required",
+              description: "SOS feature requires your location to find the nearest police station",
+              variant: "destructive"
+            });
+          }
+        );
+      } else {
+        toast({
+          title: "Geolocation not supported",
+          description: "Your browser doesn't support geolocation. SOS feature requires location access.",
+          variant: "destructive"
+        });
+      }
+    } else {
+      setSOSModalOpen(true);
     }
   };
 
@@ -163,13 +203,18 @@ const PoliceStationsMap = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2 h-[600px] rounded-lg overflow-hidden bg-gray-100 border">
+              <div className="lg:col-span-2 h-[600px] rounded-lg overflow-hidden bg-gray-100 border relative">
                 {userLocation && (
-                  <MapComponent 
-                    userLocation={userLocation} 
-                    policeStations={filteredStations}
-                    onStationClick={handleStationClick}
-                  />
+                  <>
+                    <MapComponent 
+                      userLocation={userLocation} 
+                      policeStations={filteredStations}
+                      onStationClick={handleStationClick}
+                    />
+                    <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 z-10">
+                      <SOSButton onClick={handleSOSClick} />
+                    </div>
+                  </>
                 )}
               </div>
               <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2">
@@ -196,6 +241,12 @@ const PoliceStationsMap = () => {
         </div>
       </div>
       <Footer />
+      
+      <SOSModal 
+        open={sosModalOpen} 
+        onOpenChange={setSOSModalOpen} 
+        userLocation={userLocation} 
+      />
     </div>
   );
 };
