@@ -92,7 +92,6 @@ const ReportCard = ({ className }: ReportCardProps) => {
       
       <div className="flex justify-between">
         <Button 
-          as={Link}
           to="/cancel-report" 
           variant="outline" 
           className="border-shield-blue text-shield-blue hover:bg-shield-blue hover:text-white transition-all"
@@ -100,7 +99,6 @@ const ReportCard = ({ className }: ReportCardProps) => {
           Cancel
         </Button>
         <Button 
-          as={Link}
           to="/view-draft-report"
           className="bg-shield-blue text-white hover:bg-blue-600 transition-all"
         >
