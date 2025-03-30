@@ -26,6 +26,7 @@ import CaseHeatmap from "./pages/CaseHeatmap";
 import PoliceStationDetail from "./pages/PoliceStationDetail";
 import HelpUsPage from "./pages/HelpUsPage";
 import SubmitTipPage from "./pages/SubmitTipPage";
+import AdvisoryPage from "./pages/AdvisoryPage";
 
 const queryClient = new QueryClient();
 
@@ -57,6 +58,7 @@ const App = () => (
           <Route path="/police-station/:id" element={<PoliceStationDetail />} />
           <Route path="/help-us" element={<HelpUsPage />} />
           <Route path="/submit-tip" element={<SubmitTipPage />} />
+          <Route path="/advisory" element={<AdvisoryPage />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

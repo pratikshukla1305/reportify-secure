@@ -56,15 +56,21 @@ const ViewDraftReport = () => {
               
               <h3 className="text-lg font-medium mb-2">Submitted Evidence</h3>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
-                <div className="bg-gray-100 rounded-lg aspect-square flex items-center justify-center text-gray-400 shimmer">
-                  Image 1
-                </div>
-                <div className="bg-gray-100 rounded-lg aspect-square flex items-center justify-center text-gray-400 shimmer">
-                  Image 2
-                </div>
-                <div className="bg-gray-100 rounded-lg aspect-square flex items-center justify-center text-gray-400 shimmer">
-                  Image 3
-                </div>
+                <img 
+                  src="https://images.unsplash.com/photo-1590486803833-1c5dc8ddd4c8?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80" 
+                  alt="Evidence" 
+                  className="aspect-square object-cover rounded-lg border border-gray-200"
+                />
+                <img 
+                  src="https://images.unsplash.com/photo-1576482316642-48cf1c400f14?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80" 
+                  alt="Evidence" 
+                  className="aspect-square object-cover rounded-lg border border-gray-200"
+                />
+                <img 
+                  src="https://images.unsplash.com/photo-1594717527389-a590b56e331d?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80" 
+                  alt="Evidence" 
+                  className="aspect-square object-cover rounded-lg border border-gray-200"
+                />
               </div>
               
               <div className="border-t border-gray-200 pt-6">

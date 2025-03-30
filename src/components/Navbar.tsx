@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Shield, Menu, X, MapPin, AlertCircle } from 'lucide-react';
+import { Shield, Menu, X, MapPin, AlertCircle, Megaphone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import SOSButton from '@/components/sos/SOSButton';
@@ -133,6 +133,15 @@ const Navbar = () => {
               e-KYC
             </Link>
             
+            {/* Advisory Link */}
+            <Link 
+              to="/advisory" 
+              className="text-sm font-medium text-gray-700 hover:text-shield-blue transition-colors flex items-center"
+            >
+              <Megaphone className="mr-1 h-4 w-4" />
+              Advisory
+            </Link>
+            
             {/* Help Us Link */}
             <Link 
               to="/help-us" 
@@ -225,6 +234,16 @@ const Navbar = () => {
               onClick={() => setIsMobileMenuOpen(false)}
             >
               e-KYC
+            </Link>
+            
+            {/* Advisory Mobile Link */}
+            <Link 
+              to="/advisory" 
+              className="block text-base font-medium text-gray-700 hover:text-shield-blue transition-colors flex items-center"
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              <Megaphone className="mr-1 h-4 w-4" />
+              Advisory
             </Link>
             
             {/* Help Us Mobile Link */}
