@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { FileText, ShieldCheck, Clock, FileImage, FileSpreadsheet, FileCode } from 'lucide-react';
+import { FileText, ShieldCheck, Clock, FileSpreadsheet, FileCode } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -17,35 +17,6 @@ const ReportCard = ({ className }: ReportCardProps) => {
       </div>
       
       <div className="rounded-xl bg-shield-light p-5 mb-6">
-        <div className="mb-3 flex items-center gap-2">
-          <FileImage className="h-5 w-5 text-shield-blue" />
-          <span className="text-sm font-medium">Processing Images</span>
-        </div>
-        
-        <div className="grid grid-cols-3 gap-2 mb-4">
-          <div className="bg-white/80 rounded-md aspect-square overflow-hidden">
-            <img 
-              src="https://images.unsplash.com/photo-1594717527389-a590b56e331d?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80" 
-              alt="Evidence" 
-              className="w-full h-full object-cover"
-            />
-          </div>
-          <div className="bg-white/80 rounded-md aspect-square overflow-hidden">
-            <img 
-              src="https://images.unsplash.com/photo-1590486803833-1c5dc8ddd4c8?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80" 
-              alt="Evidence" 
-              className="w-full h-full object-cover"
-            />
-          </div>
-          <div className="bg-white/80 rounded-md aspect-square overflow-hidden">
-            <img 
-              src="https://images.unsplash.com/photo-1576482316642-48cf1c400f14?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80" 
-              alt="Evidence" 
-              className="w-full h-full object-cover"
-            />
-          </div>
-        </div>
-        
         <div className="space-y-3 mb-4">
           <div className="flex items-center gap-2 mb-2">
             <FileSpreadsheet className="h-5 w-5 text-shield-blue" />

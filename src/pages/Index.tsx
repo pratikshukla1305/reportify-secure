@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import Hero from '@/components/Hero';
@@ -57,17 +56,17 @@ const Index = () => {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-16">
             <div className="relative animate-fade-up" style={{ animationDelay: '0.1s' }}>
               <div className="absolute -top-4 -left-4 w-12 h-12 rounded-full bg-shield-blue flex items-center justify-center text-white font-bold text-lg shadow-lg">1</div>
-              <ReportCard className="h-full" />
+              <UploadCard className="h-full" />
             </div>
             
             <div className="relative animate-fade-up" style={{ animationDelay: '0.2s' }}>
               <div className="absolute -top-4 -left-4 w-12 h-12 rounded-full bg-shield-blue flex items-center justify-center text-white font-bold text-lg shadow-lg">2</div>
-              <UploadCard className="h-full" />
+              <CompareCard className="h-full" />
             </div>
             
             <div className="relative animate-fade-up" style={{ animationDelay: '0.3s' }}>
               <div className="absolute -top-4 -left-4 w-12 h-12 rounded-full bg-shield-blue flex items-center justify-center text-white font-bold text-lg shadow-lg">3</div>
-              <CompareCard className="h-full" />
+              <ReportCard className="h-full" />
             </div>
           </div>
         </div>
