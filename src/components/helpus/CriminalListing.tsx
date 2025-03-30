@@ -12,20 +12,24 @@ import {
   CardTitle 
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import CriminalReportForm from './CriminalReportForm';
+import { useNavigate } from 'react-router-dom';
 import { wantedIndividuals } from '@/data/wantedIndividuals';
 
 const CriminalListing = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCriminal, setSelectedCriminal] = useState<any>(null);
+  const navigate = useNavigate();
   
   const filteredCriminals = wantedIndividuals.filter(criminal => 
     criminal.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     criminal.charges.toLowerCase().includes(searchQuery.toLowerCase()) ||
     criminal.lastKnownLocation.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const handleReportSighting = (criminalId: string) => {
+    navigate(`/submit-tip?id=${criminalId}`);
+  };
 
   return (
     <div>
@@ -129,7 +133,10 @@ const CriminalListing = () => {
                         </div>
                       </div>
                       <div className="mt-6">
-                        <Button className="w-full bg-blue-600">
+                        <Button 
+                          className="w-full bg-blue-600"
+                          onClick={() => handleReportSighting(criminal.id)}
+                        >
                           Report Sighting
                         </Button>
                       </div>
@@ -138,23 +145,13 @@ const CriminalListing = () => {
                 </DialogContent>
               </Dialog>
               
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button 
-                    size="sm"
-                    className="bg-shield-blue"
-                    onClick={() => setSelectedCriminal(criminal)}
-                  >
-                    Report Sighting
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-2xl">
-                  <DialogHeader>
-                    <DialogTitle>Report Sighting: {criminal.name}</DialogTitle>
-                  </DialogHeader>
-                  <CriminalReportForm criminal={criminal} />
-                </DialogContent>
-              </Dialog>
+              <Button 
+                size="sm"
+                className="bg-shield-blue"
+                onClick={() => handleReportSighting(criminal.id)}
+              >
+                Report Sighting
+              </Button>
             </CardFooter>
           </Card>
         ))}

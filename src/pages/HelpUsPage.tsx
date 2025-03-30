@@ -3,6 +3,7 @@ import React from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CriminalListing from '@/components/helpus/CriminalListing';
+import TipForm from '@/components/helpus/TipForm';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const HelpUsPage = () => {
@@ -48,17 +49,7 @@ const HelpUsPage = () => {
                   </ul>
                 </div>
                 <div className="bg-white rounded-lg border border-gray-200">
-                  <div className="p-6">
-                    <h3 className="text-lg font-semibold mb-4">Submit a Tip About a Wanted Individual</h3>
-                    <p className="text-sm text-gray-600 mb-6">
-                      Your information will be securely transmitted to law enforcement. You may choose to remain anonymous.
-                    </p>
-                    <iframe 
-                      src="/submit-tip" 
-                      className="w-full h-[600px] border-none"
-                      title="Submit a tip form"
-                    />
-                  </div>
+                  <TipForm />
                 </div>
               </TabsContent>
             </Tabs>
