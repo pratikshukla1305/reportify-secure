@@ -42,15 +42,15 @@ type KycFormProps = {
 const KycForm = ({ formData, onSubmit }: KycFormProps) => {
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      fullName: formData.fullName || '',
-      dob: formData.dob || '',
-      nationality: formData.nationality || '',
-      idType: formData.idType || 'passport',
-      idNumber: formData.idNumber || '',
-      address: formData.address || '',
-      phone: formData.phone || '',
-      email: formData.email || '',
+    defaultValues: formData || {
+      fullName: '',
+      dob: '',
+      nationality: '',
+      idType: 'passport',
+      idNumber: '',
+      address: '',
+      phone: '',
+      email: '',
     },
   });
 

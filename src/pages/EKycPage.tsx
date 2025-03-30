@@ -48,19 +48,24 @@ const EKycPage = () => {
     setCurrentStep("verification");
   };
 
-  const handleVerificationSubmit = (documents: {
-    idFront?: File;
-    idBack?: File;
-    selfie?: File;
-  }) => {
-    setUploadedDocuments(documents);
+  const handleVerificationComplete = () => {
     setCurrentStep("completed");
   };
 
-  const handleKycCompleted = () => {
-    // In a real application, you would send the KYC data and documents to your backend
-    // and then redirect the user to a success page or dashboard
-    navigate("/home");
+  const handleKycReset = () => {
+    // Reset the form and go back to the beginning
+    setCurrentStep("form");
+    setKycData({
+      fullName: "",
+      dob: "",
+      nationality: "",
+      idType: "national_id",
+      idNumber: "",
+      address: "",
+      phone: "",
+      email: ""
+    });
+    setUploadedDocuments({});
   };
 
   return (
@@ -103,22 +108,19 @@ const EKycPage = () => {
               </TabsList>
               
               <TabsContent value="form" className="mt-0">
-                <KycForm onSubmit={handleFormSubmit} initialData={kycData} />
+                <KycForm onSubmit={handleFormSubmit} formData={kycData} />
               </TabsContent>
               
               <TabsContent value="verification" className="mt-0">
                 <KycVerification 
-                  onSubmit={handleVerificationSubmit} 
-                  userData={kycData}
-                  initialDocuments={uploadedDocuments}
+                  formData={kycData}
+                  onComplete={handleVerificationComplete}
                 />
               </TabsContent>
               
               <TabsContent value="completed" className="mt-0">
                 <KycCompleted 
-                  userData={kycData} 
-                  documents={uploadedDocuments}
-                  onComplete={handleKycCompleted}
+                  onReset={handleKycReset}
                 />
               </TabsContent>
             </Tabs>
