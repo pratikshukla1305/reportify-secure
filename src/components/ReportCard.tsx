@@ -3,7 +3,6 @@ import React from 'react';
 import { FileText, ShieldCheck, Clock, FileImage, FileSpreadsheet, FileCode } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { Link } from 'react-router-dom';
 
 type ReportCardProps = {
   className?: string;
