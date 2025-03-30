@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+
+import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Camera, Loader2, RotateCw, Shield, UserCheck } from 'lucide-react';
+import { Camera, Loader2, RotateCw, Shield, UserCheck, CameraOff } from 'lucide-react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { useToast } from '@/hooks/use-toast';
 
 // Define the props type
 type KycVerificationProps = {
@@ -27,82 +29,202 @@ const KycVerification = ({ formData, onComplete }: KycVerificationProps) => {
   const [currentCaptureType, setCurrentCaptureType] = useState<'frontId' | 'backId' | 'selfie' | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [verificationStatus, setVerificationStatus] = useState<'pending' | 'processing' | 'completed'>('pending');
+  const [hasCamera, setHasCamera] = useState(true);
+  const [cameraError, setCameraError] = useState<string | null>(null);
+  
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const { toast } = useToast();
   
   // Handle camera open
   const openCamera = (type: 'frontId' | 'backId' | 'selfie') => {
     setCurrentCaptureType(type);
     setCameraOpen(true);
+    setCameraError(null);
+  };
+
+  // Start camera when dialog opens
+  useEffect(() => {
+    if (cameraOpen) {
+      startCamera();
+    } else {
+      stopCamera();
+    }
+  }, [cameraOpen]);
+
+  // Clean up camera on unmount
+  useEffect(() => {
+    return () => {
+      stopCamera();
+    };
+  }, []);
+
+  // Start the camera
+  const startCamera = async () => {
+    setIsLoading(true);
+    try {
+      const constraints = {
+        video: {
+          facingMode: currentCaptureType === 'selfie' ? 'user' : 'environment',
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        }
+      };
+      
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        streamRef.current = stream;
+        setHasCamera(true);
+      }
+    } catch (error) {
+      console.error('Error accessing camera:', error);
+      setHasCamera(false);
+      setCameraError('Unable to access your camera. Please ensure camera permissions are enabled.');
+      toast({
+        title: "Camera Access Error",
+        description: "Please allow camera access to continue verification.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Stop the camera
+  const stopCamera = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+    
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
   };
 
   // Simulate capture
   const captureImage = () => {
-    // Simulate camera capture with a delay
     setIsLoading(true);
     
-    setTimeout(() => {
-      // Generate a placeholder image (colored rectangle)
-      let color;
-      if (currentCaptureType === 'frontId') color = '#e3f2fd';
-      else if (currentCaptureType === 'backId') color = '#e8f5e9';
-      else color = '#fff3e0';
-      
+    if (!hasCamera) {
+      // Fallback to placeholder images if no camera
+      generatePlaceholderImage();
+      return;
+    }
+    
+    try {
+      // Create a canvas to capture the current video frame
       const canvas = document.createElement('canvas');
-      canvas.width = 400;
-      canvas.height = 300;
-      const ctx = canvas.getContext('2d');
-      
-      if (ctx) {
-        // Draw background
-        ctx.fillStyle = color;
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      if (videoRef.current) {
+        canvas.width = videoRef.current.videoWidth;
+        canvas.height = videoRef.current.videoHeight;
+        const ctx = canvas.getContext('2d');
         
-        // Add some visual elements to make it look like an ID or selfie
-        ctx.fillStyle = '#333';
-        ctx.font = '16px Arial';
-        
-        if (currentCaptureType === 'frontId') {
-          ctx.fillText('ID CARD - FRONT', 150, 30);
-          // Draw a rectangle for photo area
-          ctx.strokeStyle = '#999';
-          ctx.strokeRect(30, 60, 100, 120);
-          // Draw lines for name, etc.
-          ctx.fillRect(150, 70, 200, 1);
-          ctx.fillRect(150, 100, 200, 1);
-          ctx.fillRect(150, 130, 200, 1);
-        } else if (currentCaptureType === 'backId') {
-          ctx.fillText('ID CARD - BACK', 150, 30);
-          // Draw rectangle for signature
-          ctx.strokeStyle = '#999';
-          ctx.strokeRect(30, 170, 300, 50);
-          // Draw barcode-like lines
-          for (let i = 0; i < 10; i++) {
-            ctx.fillRect(50, 60 + i*10, 300 - i*20, 5);
+        if (ctx && videoRef.current) {
+          // Draw the current video frame to the canvas
+          ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+          
+          // Convert canvas to data URL
+          const dataUrl = canvas.toDataURL('image/png');
+          
+          if (currentCaptureType === 'frontId') {
+            setFrontIdImage(dataUrl);
+          } else if (currentCaptureType === 'backId') {
+            setBackIdImage(dataUrl);
+          } else if (currentCaptureType === 'selfie') {
+            setSelfieImage(dataUrl);
           }
-        } else {
-          ctx.fillText('SELFIE WITH ID', 150, 30);
-          // Draw face outline
-          ctx.beginPath();
-          ctx.arc(200, 150, 80, 0, Math.PI * 2);
-          ctx.stroke();
-          // Draw ID card outline in hand
-          ctx.strokeRect(100, 200, 200, 80);
+          
+          toast({
+            title: "Image Captured",
+            description: "Image successfully captured.",
+          });
         }
       }
+    } catch (error) {
+      console.error('Error capturing image:', error);
+      toast({
+        title: "Capture Failed",
+        description: "Failed to capture image. Please try again.",
+        variant: "destructive"
+      });
       
-      const dataUrl = canvas.toDataURL('image/png');
-      
-      if (currentCaptureType === 'frontId') {
-        setFrontIdImage(dataUrl);
-      } else if (currentCaptureType === 'backId') {
-        setBackIdImage(dataUrl);
-      } else if (currentCaptureType === 'selfie') {
-        setSelfieImage(dataUrl);
-      }
-      
+      // Fallback to placeholder images
+      generatePlaceholderImage();
+    } finally {
       setIsLoading(false);
       setCameraOpen(false);
       setCurrentCaptureType(null);
-    }, 2000);
+    }
+  };
+  
+  // Generate a placeholder image if camera fails
+  const generatePlaceholderImage = () => {
+    // Generate a placeholder image (colored rectangle)
+    let color;
+    if (currentCaptureType === 'frontId') color = '#e3f2fd';
+    else if (currentCaptureType === 'backId') color = '#e8f5e9';
+    else color = '#fff3e0';
+    
+    const canvas = document.createElement('canvas');
+    canvas.width = 400;
+    canvas.height = 300;
+    const ctx = canvas.getContext('2d');
+    
+    if (ctx) {
+      // Draw background
+      ctx.fillStyle = color;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      // Add some visual elements to make it look like an ID or selfie
+      ctx.fillStyle = '#333';
+      ctx.font = '16px Arial';
+      
+      if (currentCaptureType === 'frontId') {
+        ctx.fillText('ID CARD - FRONT', 150, 30);
+        // Draw a rectangle for photo area
+        ctx.strokeStyle = '#999';
+        ctx.strokeRect(30, 60, 100, 120);
+        // Draw lines for name, etc.
+        ctx.fillRect(150, 70, 200, 1);
+        ctx.fillRect(150, 100, 200, 1);
+        ctx.fillRect(150, 130, 200, 1);
+      } else if (currentCaptureType === 'backId') {
+        ctx.fillText('ID CARD - BACK', 150, 30);
+        // Draw rectangle for signature
+        ctx.strokeStyle = '#999';
+        ctx.strokeRect(30, 170, 300, 50);
+        // Draw barcode-like lines
+        for (let i = 0; i < 10; i++) {
+          ctx.fillRect(50, 60 + i*10, 300 - i*20, 5);
+        }
+      } else {
+        ctx.fillText('SELFIE WITH ID', 150, 30);
+        // Draw face outline
+        ctx.beginPath();
+        ctx.arc(200, 150, 80, 0, Math.PI * 2);
+        ctx.stroke();
+        // Draw ID card outline in hand
+        ctx.strokeRect(100, 200, 200, 80);
+      }
+    }
+    
+    const dataUrl = canvas.toDataURL('image/png');
+    
+    if (currentCaptureType === 'frontId') {
+      setFrontIdImage(dataUrl);
+    } else if (currentCaptureType === 'backId') {
+      setBackIdImage(dataUrl);
+    } else if (currentCaptureType === 'selfie') {
+      setSelfieImage(dataUrl);
+    }
+    
+    toast({
+      title: "Demo Mode",
+      description: "Using placeholder image since camera access is unavailable.",
+    });
   };
 
   const proceedToVerification = () => {
@@ -302,22 +424,37 @@ const KycVerification = ({ formData, onComplete }: KycVerificationProps) => {
           </DialogDescription>
           
           <div className="relative bg-black rounded-md overflow-hidden aspect-video">
-            {/* Camera viewfinder - this would be a real camera feed in a production app */}
-            <div className="absolute inset-0 flex items-center justify-center">
-              {/* Guide overlay */}
-              {currentCaptureType === 'frontId' && (
-                <div className="border-2 border-dashed border-white/70 w-4/5 h-3/5 rounded"></div>
-              )}
-              {currentCaptureType === 'backId' && (
-                <div className="border-2 border-dashed border-white/70 w-4/5 h-3/5 rounded"></div>
-              )}
-              {currentCaptureType === 'selfie' && (
-                <>
-                  <div className="border-2 border-dashed border-white/70 w-4/5 h-4/5 rounded-full"></div>
-                  <div className="absolute bottom-0 border-2 border-dashed border-white/70 w-3/5 h-1/4 rounded"></div>
-                </>
-              )}
-            </div>
+            {hasCamera ? (
+              <video 
+                ref={videoRef} 
+                autoPlay 
+                playsInline 
+                className="w-full h-full object-cover"
+              ></video>
+            ) : (
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-white">
+                <CameraOff className="h-12 w-12 mb-2" />
+                <p className="text-center px-4">{cameraError || "Camera access is unavailable"}</p>
+              </div>
+            )}
+            
+            {/* Guide overlay */}
+            {hasCamera && (
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                {currentCaptureType === 'frontId' && (
+                  <div className="border-2 border-dashed border-white/70 w-4/5 h-3/5 rounded"></div>
+                )}
+                {currentCaptureType === 'backId' && (
+                  <div className="border-2 border-dashed border-white/70 w-4/5 h-3/5 rounded"></div>
+                )}
+                {currentCaptureType === 'selfie' && (
+                  <>
+                    <div className="border-2 border-dashed border-white/70 w-4/5 h-4/5 rounded-full"></div>
+                    <div className="absolute bottom-0 border-2 border-dashed border-white/70 w-3/5 h-1/4 rounded"></div>
+                  </>
+                )}
+              </div>
+            )}
           </div>
           
           <div className="flex justify-center space-x-4">
