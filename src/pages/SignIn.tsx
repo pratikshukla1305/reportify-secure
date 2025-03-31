@@ -3,8 +3,9 @@ import React from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
-import { Shield, User, Mail, Lock } from 'lucide-react';
+import { Shield, User, Mail, Lock, UserCog } from 'lucide-react';
 import AuthButton from '@/components/AuthButton';
+import { Link } from 'react-router-dom';
 
 const SignIn = () => {
   return (
@@ -121,6 +122,18 @@ const SignIn = () => {
                     <a href="/get-started" className="font-medium text-shield-blue hover:text-blue-600">
                       Get Started
                     </a>
+                  </div>
+                  
+                  <div className="pt-4 border-t border-gray-200">
+                    <div className="flex items-center justify-center space-x-2">
+                      <UserCog className="h-5 w-5 text-gray-600" />
+                      <span className="text-sm text-gray-600">Are you a law enforcement officer?</span>
+                    </div>
+                    <div className="mt-2 text-center">
+                      <Link to="/officer-login" className="text-sm font-medium text-shield-blue hover:text-blue-600">
+                        Sign in to the Officer Portal
+                      </Link>
+                    </div>
                   </div>
                 </div>
               </div>

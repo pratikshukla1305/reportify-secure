@@ -27,6 +27,9 @@ import PoliceStationDetail from "./pages/PoliceStationDetail";
 import HelpUsPage from "./pages/HelpUsPage";
 import SubmitTipPage from "./pages/SubmitTipPage";
 import AdvisoryPage from "./pages/AdvisoryPage";
+import AboutUs from "./pages/AboutUs";
+import OfficerLogin from "./pages/OfficerLogin";
+import OfficerRegistration from "./pages/OfficerRegistration";
 
 const queryClient = new QueryClient();
 
@@ -44,6 +47,7 @@ const App = () => (
           <Route path="/signin" element={<SignIn />} />
           <Route path="/get-started" element={<GetStarted />} />
           <Route path="/learn-more" element={<LearnMore />} />
+          <Route path="/about-us" element={<AboutUs />} />
           <Route path="/continue-report" element={<ContinueReport />} />
           <Route path="/cancel-report" element={<CancelReport />} />
           <Route path="/view-draft-report" element={<ViewDraftReport />} />
@@ -59,6 +63,8 @@ const App = () => (
           <Route path="/help-us" element={<HelpUsPage />} />
           <Route path="/submit-tip" element={<SubmitTipPage />} />
           <Route path="/advisory" element={<AdvisoryPage />} />
+          <Route path="/officer-login" element={<OfficerLogin />} />
+          <Route path="/officer-registration" element={<OfficerRegistration />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

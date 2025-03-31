@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Camera, Loader2, RotateCw, Shield, UserCheck, CameraOff } from 'lucide-react';
+import { Camera, Loader2, RotateCw, Shield, UserCheck, CameraOff, AlertTriangle } from 'lucide-react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 
@@ -28,9 +28,24 @@ const KycVerification = ({ formData, onComplete }: KycVerificationProps) => {
   const [cameraOpen, setCameraOpen] = useState(false);
   const [currentCaptureType, setCurrentCaptureType] = useState<'frontId' | 'backId' | 'selfie' | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [verificationStatus, setVerificationStatus] = useState<'pending' | 'processing' | 'completed'>('pending');
+  const [verificationStatus, setVerificationStatus] = useState<'pending' | 'processing' | 'completed' | 'mismatch'>('pending');
   const [hasCamera, setHasCamera] = useState(true);
   const [cameraError, setCameraError] = useState<string | null>(null);
+  const [extractedData, setExtractedData] = useState<{
+    fullName?: string;
+    dob?: string;
+    idNumber?: string;
+  } | null>(null);
+  const [dataDiscrepancy, setDataDiscrepancy] = useState<{
+    field: string;
+    submittedValue: string;
+    extractedValue: string;
+  }[] | null>(null);
+  const [correctedData, setCorrectedData] = useState<{
+    fullName?: string;
+    dob?: string;
+    idNumber?: string;
+  }>({});
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -63,6 +78,19 @@ const KycVerification = ({ formData, onComplete }: KycVerificationProps) => {
   const startCamera = async () => {
     setIsLoading(true);
     try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        console.error('getUserMedia is not supported in this browser');
+        setHasCamera(false);
+        setCameraError('Your browser does not support camera access.');
+        toast({
+          title: "Camera Not Supported",
+          description: "Your browser doesn't support camera access.",
+          variant: "destructive"
+        });
+        setIsLoading(false);
+        return;
+      }
+      
       const constraints = {
         video: {
           facingMode: currentCaptureType === 'selfie' ? 'user' : 'environment',
@@ -71,12 +99,24 @@ const KycVerification = ({ formData, onComplete }: KycVerificationProps) => {
         }
       };
       
+      console.log('Attempting to access camera with constraints:', constraints);
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      console.log('Camera access granted, stream:', stream);
       
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         streamRef.current = stream;
         setHasCamera(true);
+        
+        // Log when video is ready
+        videoRef.current.onloadedmetadata = () => {
+          console.log('Video metadata loaded, video ready to play');
+          if (videoRef.current) {
+            videoRef.current.play().catch(err => {
+              console.error('Error playing video:', err);
+            });
+          }
+        };
       }
     } catch (error) {
       console.error('Error accessing camera:', error);
@@ -87,6 +127,9 @@ const KycVerification = ({ formData, onComplete }: KycVerificationProps) => {
         description: "Please allow camera access to continue verification.",
         variant: "destructive"
       });
+      
+      // Fallback to placeholder images if camera fails
+      generatePlaceholderImage();
     } finally {
       setIsLoading(false);
     }
@@ -94,8 +137,12 @@ const KycVerification = ({ formData, onComplete }: KycVerificationProps) => {
 
   // Stop the camera
   const stopCamera = () => {
+    console.log('Stopping camera stream');
     if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current.getTracks().forEach(track => {
+        console.log('Stopping track:', track);
+        track.stop();
+      });
       streamRef.current = null;
     }
     
@@ -131,6 +178,8 @@ const KycVerification = ({ formData, onComplete }: KycVerificationProps) => {
           
           if (currentCaptureType === 'frontId') {
             setFrontIdImage(dataUrl);
+            // Simulate extracting data from ID
+            simulateDataExtraction(dataUrl);
           } else if (currentCaptureType === 'backId') {
             setBackIdImage(dataUrl);
           } else if (currentCaptureType === 'selfie') {
@@ -191,6 +240,9 @@ const KycVerification = ({ formData, onComplete }: KycVerificationProps) => {
         ctx.fillRect(150, 70, 200, 1);
         ctx.fillRect(150, 100, 200, 1);
         ctx.fillRect(150, 130, 200, 1);
+        
+        // Simulate extracted data
+        simulateDataExtraction(canvas.toDataURL('image/png'));
       } else if (currentCaptureType === 'backId') {
         ctx.fillText('ID CARD - BACK', 150, 30);
         // Draw rectangle for signature
@@ -227,11 +279,74 @@ const KycVerification = ({ formData, onComplete }: KycVerificationProps) => {
     });
   };
 
+  // Simulate extracting data from ID card image
+  const simulateDataExtraction = (imageUrl: string) => {
+    // In a real implementation, this would call an OCR service
+    // For demo purposes, we'll simulate random data that sometimes matches input
+    
+    const simulatedData = {
+      fullName: Math.random() > 0.5 ? formData.fullName : formData.fullName.split(' ').reverse().join(' '),
+      dob: Math.random() > 0.5 ? formData.dob : '1990-01-01',
+      idNumber: Math.random() > 0.5 ? formData.idNumber : 'ID' + Math.floor(Math.random() * 1000000).toString()
+    };
+    
+    setExtractedData(simulatedData);
+    
+    // Check for discrepancies
+    const discrepancies = [];
+    if (simulatedData.fullName !== formData.fullName) {
+      discrepancies.push({
+        field: 'fullName',
+        submittedValue: formData.fullName,
+        extractedValue: simulatedData.fullName
+      });
+    }
+    
+    if (simulatedData.dob !== formData.dob) {
+      discrepancies.push({
+        field: 'dob',
+        submittedValue: formData.dob,
+        extractedValue: simulatedData.dob
+      });
+    }
+    
+    if (simulatedData.idNumber !== formData.idNumber) {
+      discrepancies.push({
+        field: 'idNumber',
+        submittedValue: formData.idNumber,
+        extractedValue: simulatedData.idNumber
+      });
+    }
+    
+    setDataDiscrepancy(discrepancies.length > 0 ? discrepancies : null);
+  };
+
   const proceedToVerification = () => {
+    if (dataDiscrepancy && dataDiscrepancy.length > 0) {
+      setVerificationStatus('mismatch');
+    } else {
+      setStep(2);
+      setVerificationStatus('processing');
+      
+      // Simulate verification process
+      setTimeout(() => {
+        setVerificationStatus('completed');
+      }, 3000);
+    }
+  };
+
+  const handleDataCorrection = (field: string, value: string) => {
+    setCorrectedData({
+      ...correctedData,
+      [field]: value
+    });
+  };
+
+  const acceptCorrections = () => {
     setStep(2);
     setVerificationStatus('processing');
     
-    // Simulate verification process
+    // Simulate verification process with corrected data
     setTimeout(() => {
       setVerificationStatus('completed');
     }, 3000);
@@ -358,6 +473,55 @@ const KycVerification = ({ formData, onComplete }: KycVerificationProps) => {
             </div>
           </div>
           
+          {/* Data Mismatch Section */}
+          {verificationStatus === 'mismatch' && dataDiscrepancy && dataDiscrepancy.length > 0 && (
+            <div className="mt-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+              <div className="flex items-center mb-3">
+                <AlertTriangle className="h-5 w-5 text-yellow-500 mr-2" />
+                <h3 className="font-medium text-yellow-700">Data Mismatch Detected</h3>
+              </div>
+              
+              <p className="text-gray-700 mb-4">
+                We found some discrepancies between the information you provided and what we extracted from your ID. 
+                Please review and confirm the correct information:
+              </p>
+              
+              <div className="space-y-4">
+                {dataDiscrepancy.map((item, index) => (
+                  <div key={index} className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-center">
+                    <div className="font-medium">
+                      {item.field === 'fullName' ? 'Full Name' : 
+                       item.field === 'dob' ? 'Date of Birth' : 
+                       item.field === 'idNumber' ? 'ID Number' : item.field}:
+                    </div>
+                    <div className="flex flex-col space-y-1">
+                      <div className="text-sm text-gray-500">You entered:</div>
+                      <div className="font-medium">{item.submittedValue}</div>
+                    </div>
+                    <div className="flex flex-col space-y-1">
+                      <div className="text-sm text-gray-500">From ID:</div>
+                      <input
+                        type="text"
+                        className="border rounded px-3 py-1"
+                        defaultValue={item.extractedValue}
+                        onChange={(e) => handleDataCorrection(item.field, e.target.value)}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+              
+              <div className="mt-4 flex justify-end">
+                <Button 
+                  onClick={acceptCorrections}
+                  className="bg-shield-blue text-white"
+                >
+                  Continue with Corrected Data
+                </Button>
+              </div>
+            </div>
+          )}
+          
           <div className="flex justify-center pt-4">
             <Button 
               className="bg-shield-blue text-white w-full md:w-auto"
@@ -429,6 +593,7 @@ const KycVerification = ({ formData, onComplete }: KycVerificationProps) => {
                 ref={videoRef} 
                 autoPlay 
                 playsInline 
+                muted
                 className="w-full h-full object-cover"
               ></video>
             ) : (
