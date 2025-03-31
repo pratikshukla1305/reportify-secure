@@ -1,5 +1,19 @@
 
-export const advisories = [
+export interface Advisory {
+  id: string;
+  title: string;
+  description: string;
+  date: string;
+  location: string;
+  imageUrl: string;
+  type: 'police' | 'government' | 'emergency';
+  severity?: 'low' | 'medium' | 'high';
+  issueAuthority?: string;
+  expiryDate?: string;
+  content?: string;
+}
+
+export const advisories: Advisory[] = [
   {
     id: '1',
     title: 'Traffic Restrictions During National Day Parade',
@@ -7,7 +21,9 @@ export const advisories = [
     date: 'July 10, 2023',
     location: 'Central Business District',
     imageUrl: 'https://images.unsplash.com/photo-1567942771224-4d4d5fa2c116?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
-    type: 'police' as const,
+    type: 'police',
+    severity: 'medium',
+    issueAuthority: 'Metropolitan Police Department',
   },
   {
     id: '2',
@@ -16,7 +32,9 @@ export const advisories = [
     date: 'August 5, 2023',
     location: 'Nationwide',
     imageUrl: 'https://images.unsplash.com/photo-1583797227225-4233106c5a2a?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
-    type: 'government' as const,
+    type: 'government',
+    severity: 'high',
+    issueAuthority: 'Department of Public Health',
   },
   {
     id: '3',
@@ -25,7 +43,9 @@ export const advisories = [
     date: 'September 12, 2023',
     location: 'Eastern Coastal District',
     imageUrl: 'https://images.unsplash.com/photo-1520627977056-c307aeb9a625?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
-    type: 'emergency' as const,
+    type: 'emergency',
+    severity: 'high',
+    issueAuthority: 'Emergency Management Agency',
   },
   {
     id: '4',
@@ -34,7 +54,9 @@ export const advisories = [
     date: 'October 23, 2023',
     location: 'Nationwide',
     imageUrl: 'https://images.unsplash.com/photo-1563986768609-322da13575f3?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
-    type: 'government' as const,
+    type: 'government',
+    severity: 'medium',
+    issueAuthority: 'Department of Digital Security',
   },
   {
     id: '5',
@@ -43,7 +65,9 @@ export const advisories = [
     date: 'November 8, 2023',
     location: 'Metropolitan Area',
     imageUrl: 'https://images.unsplash.com/photo-1596394516093-501ba68a0ba6?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
-    type: 'police' as const,
+    type: 'police',
+    severity: 'medium',
+    issueAuthority: 'Metropolitan Police Department',
   },
   {
     id: '6',
@@ -52,6 +76,8 @@ export const advisories = [
     date: 'December 2, 2023',
     location: 'Northern Region',
     imageUrl: 'https://images.unsplash.com/photo-1513031300226-c8fb12de9abe?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
-    type: 'emergency' as const,
+    type: 'emergency',
+    severity: 'high',
+    issueAuthority: 'Forest Department',
   },
 ];

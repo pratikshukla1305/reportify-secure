@@ -1,108 +1,110 @@
 
-export const caseDensityData = [
+export interface CaseDensityData {
+  id: string;
+  region: string;
+  timestamp?: string;
+  location: {
+    lat: number;
+    lng: number;
+    address?: string;
+  };
+  description?: string;
+  caseType?: string;
+  caseNumber?: string;
+  status?: string;
+  reporterId?: string;
+  count: number;
+}
+
+export const caseDensityData: CaseDensityData[] = [
   {
-    id: "case-area-1",
-    location: "Egmore",
-    type: "theft",
-    count: 156,
-    coordinates: { lat: 13.0729, lng: 80.2598 }
+    id: 'case-001',
+    region: 'Downtown',
+    location: {
+      address: 'Central Business District',
+      lat: 40.712775,
+      lng: -74.005973
+    },
+    description: 'Multiple reports of pickpocketing in crowded areas',
+    caseType: 'theft',
+    caseNumber: 'TH-2023-0142',
+    status: 'investigating',
+    timestamp: new Date('2023-05-15').toISOString(),
+    count: 23
   },
   {
-    id: "case-area-2",
-    location: "Triplicane",
-    type: "theft",
-    count: 124,
-    coordinates: { lat: 13.0567, lng: 80.2702 }
+    id: 'case-002',
+    region: 'North Side',
+    location: {
+      address: 'Residential Area',
+      lat: 40.753060,
+      lng: -73.983883
+    },
+    description: 'Residential break-ins reported in the last month',
+    caseType: 'burglary',
+    caseNumber: 'BG-2023-0089',
+    status: 'open',
+    timestamp: new Date('2023-05-20').toISOString(),
+    count: 12
   },
   {
-    id: "case-area-3",
-    location: "T. Nagar",
-    type: "theft",
-    count: 198,
-    coordinates: { lat: 13.0418, lng: 80.2341 }
+    id: 'case-003',
+    region: 'West End',
+    location: {
+      address: 'Shopping Mall',
+      lat: 40.758896,
+      lng: -73.985130
+    },
+    description: 'Vehicle vandalism in parking garages',
+    caseType: 'vandalism',
+    caseNumber: 'VD-2023-0117',
+    status: 'investigating',
+    timestamp: new Date('2023-05-18').toISOString(),
+    count: 8
   },
   {
-    id: "case-area-4",
-    location: "Anna Nagar",
-    type: "theft",
-    count: 87,
-    coordinates: { lat: 13.0850, lng: 80.2101 }
+    id: 'case-004',
+    region: 'East Side',
+    location: {
+      address: 'Financial District',
+      lat: 40.703812,
+      lng: -74.012166
+    },
+    description: 'Credit card skimming at ATMs',
+    caseType: 'fraud',
+    caseNumber: 'FR-2023-0201',
+    status: 'investigating',
+    timestamp: new Date('2023-05-14').toISOString(),
+    count: 14
   },
   {
-    id: "case-area-5",
-    location: "Adyar",
-    type: "theft",
-    count: 92,
-    coordinates: { lat: 13.0012, lng: 80.2565 }
+    id: 'case-005',
+    region: 'South End',
+    location: {
+      address: 'Entertainment District',
+      lat: 40.741895,
+      lng: -73.989308
+    },
+    description: 'Multiple assault reports in nightlife areas',
+    caseType: 'assault',
+    caseNumber: 'AS-2023-0078',
+    status: 'investigating',
+    timestamp: new Date('2023-05-21').toISOString(),
+    count: 17
   },
   {
-    id: "case-area-6",
-    location: "Mylapore",
-    type: "assault",
-    count: 76,
-    coordinates: { lat: 13.0369, lng: 80.2676 }
-  },
-  {
-    id: "case-area-7",
-    location: "Nungambakkam",
-    type: "assault",
-    count: 83,
-    coordinates: { lat: 13.0569, lng: 80.2425 }
-  },
-  {
-    id: "case-area-8",
-    location: "Royapettah",
-    type: "assault",
-    count: 68,
-    coordinates: { lat: 13.0533, lng: 80.2683 }
-  },
-  {
-    id: "case-area-9",
-    location: "Velachery",
-    type: "assault",
-    count: 63,
-    coordinates: { lat: 12.9815, lng: 80.2180 }
-  },
-  {
-    id: "case-area-10",
-    location: "Guindy",
-    type: "cybercrime",
-    count: 115,
-    coordinates: { lat: 13.0069, lng: 80.2143 }
-  },
-  {
-    id: "case-area-11",
-    location: "Perungudi",
-    type: "cybercrime",
-    count: 107,
-    coordinates: { lat: 12.9516, lng: 80.2419 }
-  },
-  {
-    id: "case-area-12",
-    location: "Thiruvanmiyur",
-    type: "cybercrime",
-    count: 94,
-    coordinates: { lat: 12.9837, lng: 80.2594 }
-  },
-  {
-    id: "case-area-13",
-    location: "George Town",
-    type: "fraud",
-    count: 134,
-    coordinates: { lat: 13.0891, lng: 80.2867 }
-  },
-  {
-    id: "case-area-14",
-    location: "Choolaimedu",
-    type: "fraud",
-    count: 78,
-    coordinates: { lat: 13.0672, lng: 80.2219 }
-  },
-  {
-    id: "case-area-15",
-    location: "Porur",
-    type: "fraud",
-    count: 82,
-    coordinates: { lat: 13.0374, lng: 80.1575 }
+    id: 'case-006',
+    region: 'Central Park',
+    location: {
+      address: 'Park Area',
+      lat: 40.781327,
+      lng: -73.966246
+    },
+    description: 'Phone thefts from joggers',
+    caseType: 'theft',
+    caseNumber: 'TH-2023-0158',
+    status: 'resolved',
+    timestamp: new Date('2023-05-10').toISOString(),
+    count: 9
   }
 ];

@@ -26,11 +26,11 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from '@/hooks/use-toast';
-import { caseDensityData } from '@/data/caseDensityData';
+import { caseDensityData, CaseDensityData } from '@/data/caseDensityData';
 
 const OfficerCaseMap = () => {
-  const [caseData, setCaseData] = useState(caseDensityData);
-  const [selectedCase, setSelectedCase] = useState<any | null>(null);
+  const [caseData, setCaseData] = useState<CaseDensityData[]>(caseDensityData);
+  const [selectedCase, setSelectedCase] = useState<CaseDensityData | null>(null);
   const [addEditOpen, setAddEditOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -40,7 +40,7 @@ const OfficerCaseMap = () => {
   const [formData, setFormData] = useState({
     id: '',
     region: '',
-    location: { lat: 0, lng: 0 },
+    location: { lat: 0, lng: 0, address: '' },
     description: '',
     date: '',
     time: '',
@@ -58,7 +58,7 @@ const OfficerCaseMap = () => {
     return caseData.filter(c => c.region === filterRegion);
   };
   
-  const handleViewCase = (caseItem: any) => {
+  const handleViewCase = (caseItem: CaseDensityData) => {
     setSelectedCase(caseItem);
   };
   
@@ -67,7 +67,7 @@ const OfficerCaseMap = () => {
     setFormData({
       id: '',
       region: '',
-      location: { lat: 0, lng: 0 },
+      location: { lat: 0, lng: 0, address: '' },
       description: '',
       date: new Date().toISOString().split('T')[0],
       time: new Date().toTimeString().slice(0, 5),
@@ -80,7 +80,7 @@ const OfficerCaseMap = () => {
     setAddEditOpen(true);
   };
   
-  const handleEditCase = (caseItem: any) => {
+  const handleEditCase = (caseItem: CaseDensityData) => {
     // Format date and time from timestamp if available
     let dateStr = '';
     let timeStr = '';
@@ -94,7 +94,11 @@ const OfficerCaseMap = () => {
     setFormData({
       id: caseItem.id,
       region: caseItem.region,
-      location: caseItem.location,
+      location: {
+        lat: caseItem.location.lat,
+        lng: caseItem.location.lng,
+        address: caseItem.location.address || ''
+      },
       description: caseItem.description || '',
       date: dateStr,
       time: timeStr,
@@ -107,7 +111,7 @@ const OfficerCaseMap = () => {
     setAddEditOpen(true);
   };
   
-  const handleDeleteClick = (caseItem: any) => {
+  const handleDeleteClick = (caseItem: CaseDensityData) => {
     setSelectedCase(caseItem);
     setDeleteConfirmOpen(true);
   };
@@ -147,7 +151,13 @@ const OfficerCaseMap = () => {
       const updatedCases = caseData.map(c => 
         c.id === formData.id ? { 
           ...c,
-          ...formData,
+          region: formData.region,
+          location: formData.location,
+          description: formData.description,
+          caseType: formData.caseType,
+          caseNumber: formData.caseNumber,
+          status: formData.status,
+          reporterId: formData.reporterId,
           timestamp
         } : c
       );
@@ -159,9 +169,15 @@ const OfficerCaseMap = () => {
       });
     } else {
       // Add new case
-      const newCase = {
-        ...formData,
+      const newCase: CaseDensityData = {
         id: `case-${Date.now()}`,
+        region: formData.region,
+        location: formData.location,
+        description: formData.description,
+        caseType: formData.caseType,
+        caseNumber: formData.caseNumber,
+        status: formData.status,
+        reporterId: formData.reporterId,
         timestamp,
         count: 1 // For case density visualization
       };
@@ -177,7 +193,9 @@ const OfficerCaseMap = () => {
     setAddEditOpen(false);
   };
   
-  const getCaseTypeDisplay = (type: string) => {
+  const getCaseTypeDisplay = (type: string | undefined) => {
+    if (!type) return 'Unknown';
+    
     const typeMap: {[key: string]: string} = {
       'theft': 'Theft',
       'assault': 'Assault',
@@ -190,7 +208,9 @@ const OfficerCaseMap = () => {
     return typeMap[type] || type;
   };
   
-  const getCaseStatusDisplay = (status: string) => {
+  const getCaseStatusDisplay = (status: string | undefined) => {
+    if (!status) return 'Unknown';
+    
     const statusMap: {[key: string]: string} = {
       'open': 'Open',
       'investigating': 'Investigating',
@@ -402,7 +422,10 @@ const OfficerCaseMap = () => {
               <div>
                 <div className="text-sm font-medium">Location</div>
                 <div className="text-sm">
-                  Coordinates: {selectedCase.location.lat.toFixed(6)}, {selectedCase.location.lng.toFixed(6)}
+                  {selectedCase.location.address && (
+                    <div className="mb-1">{selectedCase.location.address}</div>
+                  )}
+                  <div>Coordinates: {selectedCase.location.lat.toFixed(6)}, {selectedCase.location.lng.toFixed(6)}</div>
                 </div>
                 <div className="mt-2 aspect-video bg-gray-100 rounded-md flex items-center justify-center">
                   <MapPin className="h-8 w-8 text-gray-300" />
@@ -509,6 +532,21 @@ const OfficerCaseMap = () => {
                     step="0.000001"
                   />
                 </div>
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Address</label>
+                <Input 
+                  value={formData.location.address}
+                  onChange={(e) => setFormData({
+                    ...formData, 
+                    location: {
+                      ...formData.location,
+                      address: e.target.value
+                    }
+                  })}
+                  placeholder="Enter address"
+                />
               </div>
               
               <div className="space-y-2">
@@ -628,7 +666,7 @@ const OfficerCaseMap = () => {
               </p>
               <p className="text-sm text-red-600 mt-1">
                 {selectedCase.region} - {selectedCase.description?.substring(0, 50) || 'No description'}
-                {selectedCase.description?.length > 50 ? '...' : ''}
+                {selectedCase.description && selectedCase.description.length > 50 ? '...' : ''}
               </p>
             </div>
             

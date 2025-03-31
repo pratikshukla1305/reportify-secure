@@ -28,13 +28,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from '@/hooks/use-toast';
-import { wantedIndividuals } from '@/data/wantedIndividuals';
+import { wantedIndividuals, WantedIndividual } from '@/data/wantedIndividuals';
 
 // Mock tips data
 const mockTips = [
   {
     id: 'tip-001',
-    criminalId: 'criminal-001',
+    criminalId: '1',
     criminalName: 'John Doe',
     submittedBy: 'Anonymous',
     contactInfo: 'anonymous@example.com',
@@ -45,8 +45,8 @@ const mockTips = [
   },
   {
     id: 'tip-002',
-    criminalId: 'criminal-003',
-    criminalName: 'Michael Smith',
+    criminalId: '3',
+    criminalName: 'Robert Johnson',
     submittedBy: 'Jane Wilson',
     contactInfo: '+1 (555) 987-6543',
     location: 'West Side Mall, near the food court',
@@ -56,8 +56,8 @@ const mockTips = [
   },
   {
     id: 'tip-003',
-    criminalId: 'criminal-002',
-    criminalName: 'Robert Johnson',
+    criminalId: '2',
+    criminalName: 'Jane Smith',
     submittedBy: 'Store Manager',
     contactInfo: 'manager@example.com',
     location: 'Riverside Gas Station',
@@ -67,11 +67,25 @@ const mockTips = [
   }
 ];
 
+interface CriminalFormData {
+  id: string;
+  name: string;
+  age: string;
+  height: string;
+  weight: string;
+  lastKnownLocation: string;
+  charges: string;
+  caseNumber: string;
+  dangerLevel: 'Low' | 'Medium' | 'High';
+  photoUrl: string;
+  description?: string;
+}
+
 const OfficerCriminalPanel = () => {
-  const [criminalData, setCriminalData] = useState(wantedIndividuals);
+  const [criminalData, setCriminalData] = useState<WantedIndividual[]>(wantedIndividuals);
   const [tipData, setTipData] = useState(mockTips);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCriminal, setSelectedCriminal] = useState<any | null>(null);
+  const [selectedCriminal, setSelectedCriminal] = useState<WantedIndividual | null>(null);
   const [selectedTip, setSelectedTip] = useState<any | null>(null);
   const [criminalDetailsOpen, setCriminalDetailsOpen] = useState(false);
   const [tipDetailsOpen, setTipDetailsOpen] = useState(false);
@@ -82,7 +96,7 @@ const OfficerCriminalPanel = () => {
   const [isEditing, setIsEditing] = useState(false);
   
   // Form state for adding/editing criminals
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<CriminalFormData>({
     id: '',
     name: '',
     age: '',
@@ -125,7 +139,7 @@ const OfficerCriminalPanel = () => {
     );
   };
   
-  const handleViewCriminalDetails = (criminal: any) => {
+  const handleViewCriminalDetails = (criminal: WantedIndividual) => {
     setSelectedCriminal(criminal);
     setCriminalDetailsOpen(true);
   };
@@ -155,7 +169,7 @@ const OfficerCriminalPanel = () => {
     setAddEditOpen(true);
   };
   
-  const handleEditCriminal = (criminal: any) => {
+  const handleEditCriminal = (criminal: WantedIndividual) => {
     setFormData({
       ...criminal
     });
@@ -163,7 +177,7 @@ const OfficerCriminalPanel = () => {
     setAddEditOpen(true);
   };
   
-  const handleDeleteClick = (criminal: any) => {
+  const handleDeleteClick = (criminal: WantedIndividual) => {
     setSelectedCriminal(criminal);
     setDeleteConfirmOpen(true);
   };
@@ -194,10 +208,25 @@ const OfficerCriminalPanel = () => {
       return;
     }
     
+    // Create a new criminal object that conforms to WantedIndividual type
+    const criminalToSave: WantedIndividual = {
+      id: formData.id || `${Date.now()}`,
+      name: formData.name,
+      age: formData.age,
+      height: formData.height,
+      weight: formData.weight,
+      lastKnownLocation: formData.lastKnownLocation,
+      charges: formData.charges,
+      caseNumber: formData.caseNumber,
+      dangerLevel: formData.dangerLevel,
+      photoUrl: formData.photoUrl,
+      description: formData.description
+    };
+    
     if (isEditing) {
       // Update existing criminal
       const updatedCriminals = criminalData.map(c => 
-        c.id === formData.id ? { ...formData } : c
+        c.id === formData.id ? criminalToSave : c
       );
       setCriminalData(updatedCriminals);
       
@@ -207,12 +236,7 @@ const OfficerCriminalPanel = () => {
       });
     } else {
       // Add new criminal
-      const newCriminal = {
-        ...formData,
-        id: `criminal-${Date.now()}`
-      };
-      
-      setCriminalData([...criminalData, newCriminal]);
+      setCriminalData([...criminalData, criminalToSave]);
       
       toast({
         title: "Profile created",
@@ -240,7 +264,7 @@ const OfficerCriminalPanel = () => {
     }
   };
   
-  const getDangerBadge = (level: string) => {
+  const getDangerBadge = (level: 'Low' | 'Medium' | 'High') => {
     switch (level) {
       case 'High':
         return <Badge variant="destructive">High Risk</Badge>;
@@ -689,7 +713,7 @@ const OfficerCriminalPanel = () => {
                 <label className="text-sm font-medium">Risk Level</label>
                 <Select 
                   value={formData.dangerLevel}
-                  onValueChange={(value) => setFormData({...formData, dangerLevel: value})}
+                  onValueChange={(value: 'Low' | 'Medium' | 'High') => setFormData({...formData, dangerLevel: value})}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select risk level" />

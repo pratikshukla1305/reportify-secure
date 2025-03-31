@@ -27,11 +27,26 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from '@/hooks/use-toast';
-import { advisories } from '@/data/advisoryData';
+import { advisories, Advisory } from '@/data/advisoryData';
+
+interface AdvisoryFormData {
+  id: string;
+  title: string;
+  type: string;
+  description: string;
+  date: string;
+  location: string;
+  severity: string;
+  issueAuthority: string;
+  expiryDate?: string;
+  imageUrl?: string;
+  content?: string;
+  regions?: string[];
+}
 
 const OfficerAdvisoryPanel = () => {
-  const [advisoryData, setAdvisoryData] = useState(advisories);
-  const [selectedAdvisory, setSelectedAdvisory] = useState<any | null>(null);
+  const [advisoryData, setAdvisoryData] = useState<Advisory[]>(advisories);
+  const [selectedAdvisory, setSelectedAdvisory] = useState<Advisory | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [addEditOpen, setAddEditOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -40,22 +55,28 @@ const OfficerAdvisoryPanel = () => {
   const [isEditing, setIsEditing] = useState(false);
   
   // Form state for adding/editing
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<AdvisoryFormData>({
     id: '',
     title: '',
     type: 'police',
     description: '',
-    issueDate: '',
-    expiryDate: '',
-    issueAuthority: '',
+    date: '',
+    location: '',
     severity: 'medium',
-    regions: [],
+    issueAuthority: '',
+    expiryDate: '',
+    imageUrl: '',
     content: '',
+    regions: [],
   });
   
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString();
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString();
+    } catch (e) {
+      return dateString;
+    }
   };
   
   const getFilteredAdvisories = () => {
@@ -73,17 +94,17 @@ const OfficerAdvisoryPanel = () => {
         advisory => 
           advisory.title.toLowerCase().includes(query) || 
           advisory.description.toLowerCase().includes(query) ||
-          advisory.issueAuthority.toLowerCase().includes(query)
+          (advisory.issueAuthority && advisory.issueAuthority.toLowerCase().includes(query))
       );
     }
     
-    // Sort by issue date (most recent first)
-    filtered.sort((a, b) => new Date(b.issueDate).getTime() - new Date(a.issueDate).getTime());
+    // Sort by date (most recent first)
+    filtered.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     
     return filtered;
   };
   
-  const handleViewDetails = (advisory: any) => {
+  const handleViewDetails = (advisory: Advisory) => {
     setSelectedAdvisory(advisory);
     setDetailsOpen(true);
   };
@@ -95,28 +116,30 @@ const OfficerAdvisoryPanel = () => {
       title: '',
       type: 'police',
       description: '',
-      issueDate: new Date().toISOString().split('T')[0],
-      expiryDate: '',
-      issueAuthority: '',
+      date: new Date().toISOString().split('T')[0],
+      location: '',
       severity: 'medium',
-      regions: [],
+      issueAuthority: '',
+      expiryDate: '',
+      imageUrl: '',
       content: '',
+      regions: [],
     });
     setIsEditing(false);
     setAddEditOpen(true);
   };
   
-  const handleEditAdvisory = (advisory: any) => {
+  const handleEditAdvisory = (advisory: Advisory) => {
     setFormData({
       ...advisory,
-      issueDate: new Date(advisory.issueDate).toISOString().split('T')[0],
-      expiryDate: advisory.expiryDate ? new Date(advisory.expiryDate).toISOString().split('T')[0] : '',
+      date: advisory.date,
+      expiryDate: advisory.expiryDate || '',
     });
     setIsEditing(true);
     setAddEditOpen(true);
   };
   
-  const handleDeleteClick = (advisory: any) => {
+  const handleDeleteClick = (advisory: Advisory) => {
     setSelectedAdvisory(advisory);
     setDeleteConfirmOpen(true);
   };
@@ -138,7 +161,7 @@ const OfficerAdvisoryPanel = () => {
   
   const handleSaveAdvisory = () => {
     // Validate form
-    if (!formData.title || !formData.description || !formData.issueDate || !formData.issueAuthority) {
+    if (!formData.title || !formData.description || !formData.date || !formData.issueAuthority) {
       toast({
         title: "Missing information",
         description: "Please fill in all required fields.",
@@ -147,10 +170,25 @@ const OfficerAdvisoryPanel = () => {
       return;
     }
     
+    // Create new advisory object based on form data
+    const advisoryToSave: Advisory = {
+      id: formData.id || `advisory-${Date.now()}`,
+      title: formData.title,
+      type: formData.type as 'police' | 'government' | 'emergency',
+      description: formData.description,
+      date: formData.date,
+      location: formData.location,
+      imageUrl: formData.imageUrl || 'https://images.unsplash.com/photo-1567942771224-4d4d5fa2c116?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
+      severity: formData.severity as 'low' | 'medium' | 'high',
+      issueAuthority: formData.issueAuthority,
+      expiryDate: formData.expiryDate || undefined,
+      content: formData.content || undefined,
+    };
+    
     if (isEditing) {
       // Update existing advisory
       const updatedAdvisories = advisoryData.map(a => 
-        a.id === formData.id ? { ...formData } : a
+        a.id === formData.id ? advisoryToSave : a
       );
       setAdvisoryData(updatedAdvisories);
       
@@ -160,14 +198,7 @@ const OfficerAdvisoryPanel = () => {
       });
     } else {
       // Add new advisory
-      const newAdvisory = {
-        ...formData,
-        id: `advisory-${Date.now()}`,
-        issueDate: new Date(formData.issueDate).toISOString(),
-        expiryDate: formData.expiryDate ? new Date(formData.expiryDate).toISOString() : null,
-      };
-      
-      setAdvisoryData([...advisoryData, newAdvisory]);
+      setAdvisoryData([...advisoryData, advisoryToSave]);
       
       toast({
         title: "Advisory created",
@@ -240,12 +271,12 @@ const OfficerAdvisoryPanel = () => {
             <CardHeader className="pb-2">
               <div className="flex justify-between mb-1">
                 {getTypeBadge(advisory.type)}
-                {getSeverityBadge(advisory.severity)}
+                {advisory.severity && getSeverityBadge(advisory.severity)}
               </div>
               <CardTitle className="text-base">{advisory.title}</CardTitle>
               <div className="flex items-center text-xs text-gray-500 mt-1">
                 <Calendar className="h-3 w-3 mr-1" />
-                <span>Issued: {formatDate(advisory.issueDate)}</span>
+                <span>Issued: {formatDate(advisory.date)}</span>
                 {advisory.expiryDate && (
                   <>
                     <span className="mx-1">•</span>
@@ -258,7 +289,7 @@ const OfficerAdvisoryPanel = () => {
             <CardContent>
               <p className="text-sm line-clamp-2 mb-2">{advisory.description}</p>
               <div className="text-xs text-gray-500">
-                Issued by: {advisory.issueAuthority}
+                Issued by: {advisory.issueAuthority || 'Unknown'}
               </div>
             </CardContent>
             <CardFooter className="pt-0 flex gap-2">
@@ -321,13 +352,13 @@ const OfficerAdvisoryPanel = () => {
             <DialogHeader>
               <div className="flex flex-wrap gap-2 mb-2">
                 {getTypeBadge(selectedAdvisory.type)}
-                {getSeverityBadge(selectedAdvisory.severity)}
+                {selectedAdvisory.severity && getSeverityBadge(selectedAdvisory.severity)}
               </div>
               <DialogTitle className="text-xl">{selectedAdvisory.title}</DialogTitle>
               <DialogDescription>
                 <div className="flex items-center mt-2">
                   <Calendar className="h-4 w-4 mr-1" />
-                  <span>Issued: {formatDate(selectedAdvisory.issueDate)}</span>
+                  <span>Issued: {formatDate(selectedAdvisory.date)}</span>
                   {selectedAdvisory.expiryDate && (
                     <>
                       <span className="mx-2">•</span>
@@ -357,21 +388,13 @@ const OfficerAdvisoryPanel = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <h3 className="text-xs font-medium">Issuing Authority</h3>
-                  <p className="text-sm">{selectedAdvisory.issueAuthority}</p>
+                  <p className="text-sm">{selectedAdvisory.issueAuthority || 'Unknown'}</p>
                 </div>
                 
-                {selectedAdvisory.regions && selectedAdvisory.regions.length > 0 && (
-                  <div>
-                    <h3 className="text-xs font-medium">Affected Regions</h3>
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {selectedAdvisory.regions.map((region: string) => (
-                        <Badge key={region} variant="outline" className="text-xs">
-                          {region}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                <div>
+                  <h3 className="text-xs font-medium">Location</h3>
+                  <p className="text-sm">{selectedAdvisory.location}</p>
+                </div>
               </div>
             </div>
             
@@ -471,8 +494,17 @@ const OfficerAdvisoryPanel = () => {
                 <label className="text-sm font-medium">Issue Date</label>
                 <Input 
                   type="date"
-                  value={formData.issueDate}
-                  onChange={(e) => setFormData({...formData, issueDate: e.target.value})}
+                  value={formData.date}
+                  onChange={(e) => setFormData({...formData, date: e.target.value})}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Location</label>
+                <Input 
+                  value={formData.location}
+                  onChange={(e) => setFormData({...formData, location: e.target.value})}
+                  placeholder="Enter affected location/area"
                 />
               </div>
               
@@ -486,15 +518,24 @@ const OfficerAdvisoryPanel = () => {
               </div>
               
               <div className="space-y-2">
-                <label className="text-sm font-medium">Short Description</label>
-                <Textarea 
-                  value={formData.description}
-                  onChange={(e) => setFormData({...formData, description: e.target.value})}
-                  placeholder="Enter a brief description"
-                  rows={2}
+                <label className="text-sm font-medium">Image URL (Optional)</label>
+                <Input 
+                  value={formData.imageUrl || ''}
+                  onChange={(e) => setFormData({...formData, imageUrl: e.target.value})}
+                  placeholder="Enter image URL"
                 />
               </div>
             </div>
+          </div>
+          
+          <div className="space-y-2 mt-2">
+            <label className="text-sm font-medium">Short Description</label>
+            <Textarea 
+              value={formData.description}
+              onChange={(e) => setFormData({...formData, description: e.target.value})}
+              placeholder="Enter a brief description"
+              rows={2}
+            />
           </div>
           
           <div className="space-y-2 mt-2">
