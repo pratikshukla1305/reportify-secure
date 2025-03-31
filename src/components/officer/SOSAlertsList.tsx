@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { 
   Card, 
@@ -36,7 +35,7 @@ const mockSOSAlerts = [
       lat: 40.785091,
       lng: -73.968285
     },
-    message: 'Someone is following me. I feel unsafe. I'm wearing a red jacket near the south entrance.',
+    message: 'Someone is following me. I feel unsafe. I\'m wearing a red jacket near the south entrance.',
     voiceRecording: true,
     timestamp: new Date(Date.now() - 1000 * 60 * 5), // 5 minutes ago
     status: 'new'
