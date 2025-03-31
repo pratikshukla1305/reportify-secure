@@ -21,8 +21,8 @@ const OfficerLogin = () => {
     setTimeout(() => {
       setIsLoading(false);
       toast.success("Login successful! Welcome officer.");
-      // After successful login, navigate to home
-      navigate("/home");
+      // After successful login, navigate to officer dashboard instead of home
+      navigate("/officer-dashboard");
     }, 1000);
   };
 
