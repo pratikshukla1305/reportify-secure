@@ -1,13 +1,14 @@
-
 import React, { useState } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
 import { Shield, Mail, Lock, UserCog, User, Badge, Building, Phone } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 const OfficerRegistration = () => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     fullName: '',
     badgeNumber: '',
@@ -18,7 +19,6 @@ const OfficerRegistration = () => {
     confirmPassword: ''
   });
   const [isLoading, setIsLoading] = useState(false);
-  const { toast } = useToast();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -32,25 +32,18 @@ const OfficerRegistration = () => {
     e.preventDefault();
     
     if (formData.password !== formData.confirmPassword) {
-      toast({
-        title: "Password Error",
-        description: "Passwords do not match.",
-        variant: "destructive"
-      });
+      toast("Passwords do not match");
       return;
     }
     
     setIsLoading(true);
     
-    // Simulate registration process
+    // Simulate registration process without department verification
     setTimeout(() => {
       setIsLoading(false);
-      toast({
-        title: "Registration Pending",
-        description: "Your registration has been submitted and is pending approval from your department.",
-      });
-      // In a real implementation, this would navigate to a confirmation page
-    }, 2000);
+      toast.success("Registration successful!");
+      navigate("/officer-login");
+    }, 1500);
   };
 
   return (
@@ -226,19 +219,12 @@ const OfficerRegistration = () => {
                     </div>
                   </div>
                   
-                  <div className="bg-blue-50 p-4 rounded-md text-sm text-gray-700">
-                    <p>
-                      <strong>Note:</strong> Your registration will be reviewed by department administrators before
-                      approval. You will receive an email notification once your account is activated.
-                    </p>
-                  </div>
-                  
                   <Button 
                     type="submit" 
                     className="w-full bg-shield-blue text-white hover:bg-blue-600 transition-all"
                     disabled={isLoading}
                   >
-                    {isLoading ? 'Submitting...' : 'Submit Registration'}
+                    {isLoading ? 'Registering...' : 'Register'}
                   </Button>
                   
                   <div className="text-center text-sm text-gray-600">

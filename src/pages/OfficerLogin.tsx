@@ -4,28 +4,26 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
 import { Shield, Mail, Lock, UserCog } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import { useToast } from '@/hooks/use-toast';
+import { Link, useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 
 const OfficerLogin = () => {
+  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { toast } = useToast();
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     
-    // Simulate login process
+    // Simulate login process without verification
     setTimeout(() => {
       setIsLoading(false);
-      toast({
-        title: "Login Successful",
-        description: "Welcome back, Officer.",
-      });
-      // In a real implementation, this would navigate to the officer dashboard
-    }, 1500);
+      toast.success("Login successful! Welcome officer.");
+      // After successful login, navigate to home
+      navigate("/home");
+    }, 1000);
   };
 
   return (

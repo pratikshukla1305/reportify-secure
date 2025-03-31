@@ -1,14 +1,24 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
-import { Link } from 'react-router-dom';
-import { FileText, Check, RotateCcw, Download, Share2, ArrowLeft } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { FileText, Check, RotateCcw, Download, Share2, ArrowLeft, Send } from 'lucide-react';
+import { toast } from 'sonner';
 
 const GenerateDetailedReport = () => {
+  const navigate = useNavigate();
   const [isGenerating, setIsGenerating] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
+  const [uploadedImages, setUploadedImages] = useState<string[]>([]);
+  
+  useEffect(() => {
+    const savedImages = sessionStorage.getItem('uploadedImages');
+    if (savedImages) {
+      setUploadedImages(JSON.parse(savedImages));
+    }
+  }, []);
   
   const handleGenerate = () => {
     setIsGenerating(true);
@@ -16,7 +26,26 @@ const GenerateDetailedReport = () => {
     setTimeout(() => {
       setIsGenerating(false);
       setIsComplete(true);
+      toast.success("Report generated successfully!");
     }, 3000);
+  };
+  
+  const handleDownload = () => {
+    // Simulate download
+    toast.success("Report downloaded successfully");
+  };
+  
+  const handleShare = () => {
+    // Simulate sharing
+    toast.success("Report shared successfully");
+  };
+  
+  const handleSendToOfficer = () => {
+    // Simulate sending to officer
+    toast.success("Report sent to officer for further processing");
+    setTimeout(() => {
+      navigate("/home");
+    }, 1500);
   };
   
   return (
@@ -60,7 +89,7 @@ const GenerateDetailedReport = () => {
                 </div>
                 <div>
                   <p className="text-sm text-gray-500 mb-1">Evidence Items</p>
-                  <p className="font-medium">3 Images, 1 Description</p>
+                  <p className="font-medium">{uploadedImages.length} Images, 1 Description</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-500 mb-1">Blockchain Status</p>
@@ -101,12 +130,30 @@ const GenerateDetailedReport = () => {
                   <h3 className="text-lg font-medium text-green-700">Report Generated Successfully!</h3>
                 </div>
                 
-                <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                  <Button className="bg-shield-blue text-white hover:bg-blue-600 transition-all">
+                <div className="flex flex-col sm:flex-row gap-4 justify-center mb-6">
+                  <Button 
+                    className="bg-shield-blue text-white hover:bg-blue-600 transition-all"
+                    onClick={handleDownload}
+                  >
                     <Download className="mr-2 h-4 w-4" /> Download Report
                   </Button>
-                  <Button variant="outline" className="border-shield-blue text-shield-blue hover:bg-shield-blue hover:text-white transition-all">
+                  
+                  <Button 
+                    variant="outline" 
+                    className="border-shield-blue text-shield-blue hover:bg-shield-blue hover:text-white transition-all"
+                    onClick={handleShare}
+                  >
                     <Share2 className="mr-2 h-4 w-4" /> Share Report
+                  </Button>
+                </div>
+                
+                <div className="mt-8 pt-8 border-t border-gray-200">
+                  <p className="text-gray-700 mb-4">Send this report to an officer for further processing</p>
+                  <Button 
+                    className="bg-green-600 text-white hover:bg-green-700 transition-all"
+                    onClick={handleSendToOfficer}
+                  >
+                    <Send className="mr-2 h-4 w-4" /> Send to Officer
                   </Button>
                 </div>
               </div>

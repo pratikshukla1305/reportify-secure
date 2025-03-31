@@ -1,17 +1,21 @@
+
 import React, { useState, useRef } from 'react';
 import { Upload, Image, Shield, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
 
 type UploadCardProps = {
   className?: string;
 };
 
 const UploadCard = ({ className }: UploadCardProps) => {
+  const navigate = useNavigate();
   const [files, setFiles] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
   const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
+  const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -36,12 +40,19 @@ const UploadCard = ({ className }: UploadCardProps) => {
   };
   
   const simulateFileUpload = (fileName: string) => {
+    setIsUploading(true);
     let progress = 0;
     const interval = setInterval(() => {
       progress += Math.floor(Math.random() * 15) + 5;
       if (progress >= 100) {
         progress = 100;
         clearInterval(interval);
+        
+        // Check if all files are uploaded
+        const allUploaded = Object.values(uploadProgress).every(p => p === 100);
+        if (allUploaded) {
+          setIsUploading(false);
+        }
       }
       setUploadProgress(prev => ({
         ...prev,
@@ -79,12 +90,32 @@ const UploadCard = ({ className }: UploadCardProps) => {
   const removeFile = (index: number) => {
     setFiles(files.filter((_, i) => i !== index));
     setPreviews(previews.filter((_, i) => i !== index));
+    
+    // Remove from progress tracking
+    const fileName = files[index].name;
+    setUploadProgress(prev => {
+      const newProgress = { ...prev };
+      delete newProgress[fileName];
+      return newProgress;
+    });
+    
     toast.info("File removed");
   };
   
   const handleBrowseClick = () => {
     if (fileInputRef.current) {
       fileInputRef.current.click();
+    }
+  };
+  
+  const handleContinueToReport = () => {
+    // Store files in sessionStorage for access in the report pages
+    if (files.length > 0) {
+      // Store preview URLs in sessionStorage to use in report
+      sessionStorage.setItem('uploadedImages', JSON.stringify(previews));
+      navigate("/continue-report");
+    } else {
+      toast.error("Please upload at least one file before continuing");
     }
   };
 
@@ -161,46 +192,17 @@ const UploadCard = ({ className }: UploadCardProps) => {
             </div>
           ))
         ) : (
-          <>
-            <div className="flex items-center space-x-4">
-              <div className="w-10 h-10 bg-shield-light rounded flex items-center justify-center">
-                <Image className="h-5 w-5 text-shield-blue" />
-              </div>
-              <div className="flex-1">
-                <div className="h-2.5 w-full bg-gray-200 rounded-full overflow-hidden">
-                  <div className="h-full w-3/4 bg-shield-blue" />
-                </div>
-                <div className="flex justify-between text-xs text-gray-500 mt-1">
-                  <span>image01.jpg</span>
-                  <span>75%</span>
-                </div>
-              </div>
-            </div>
-            
-            <div className="flex items-center space-x-4">
-              <div className="w-10 h-10 bg-shield-light rounded flex items-center justify-center">
-                <Image className="h-5 w-5 text-shield-blue" />
-              </div>
-              <div className="flex-1">
-                <div className="h-2.5 w-full bg-gray-200 rounded-full overflow-hidden">
-                  <div className="h-full w-full bg-shield-blue" />
-                </div>
-                <div className="flex justify-between text-xs text-gray-500 mt-1">
-                  <span>image02.jpg</span>
-                  <span>Complete</span>
-                </div>
-              </div>
-            </div>
-          </>
+          <p className="text-center text-gray-500">No files uploaded yet</p>
         )}
       </div>
       
       <div className="mt-6 flex justify-end">
         <Button 
-          to="/continue-report"
+          onClick={handleContinueToReport}
           className="bg-shield-blue text-white hover:bg-blue-600 transition-all"
+          disabled={isUploading || files.length === 0}
         >
-          Continue to Report
+          {isUploading ? "Uploading..." : "Continue to Report"}
         </Button>
       </div>
     </div>

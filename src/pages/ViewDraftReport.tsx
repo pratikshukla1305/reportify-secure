@@ -1,12 +1,42 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { FileText, Edit, Download, ArrowLeft } from 'lucide-react';
+import { toast } from 'sonner';
 
 const ViewDraftReport = () => {
+  const navigate = useNavigate();
+  const [uploadedImages, setUploadedImages] = useState<string[]>([]);
+  
+  useEffect(() => {
+    const savedImages = sessionStorage.getItem('uploadedImages');
+    if (savedImages) {
+      setUploadedImages(JSON.parse(savedImages));
+    } else {
+      // Use placeholder images if no uploads
+      setUploadedImages([
+        "https://images.unsplash.com/photo-1590486803833-1c5dc8ddd4c8?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80",
+        "https://images.unsplash.com/photo-1576482316642-48cf1c400f14?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80",
+        "https://images.unsplash.com/photo-1594717527389-a590b56e331d?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80"
+      ]);
+    }
+  }, []);
+  
+  const handleDownloadDraft = () => {
+    toast.success("Draft report downloaded successfully");
+  };
+  
+  const handleEditReport = () => {
+    navigate("/continue-report");
+  };
+  
+  const handleGenerateFullReport = () => {
+    navigate("/generate-detailed-report");
+  };
+
   return (
     <div className="min-h-screen bg-white">
       <Navbar />
@@ -34,7 +64,7 @@ const ViewDraftReport = () => {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                 <div>
                   <p className="text-sm text-gray-500 mb-1">Incident Date</p>
-                  <p className="font-medium">July 14, 2023</p>
+                  <p className="font-medium">{new Date().toLocaleDateString()}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-500 mb-1">Location</p>
@@ -56,21 +86,14 @@ const ViewDraftReport = () => {
               
               <h3 className="text-lg font-medium mb-2">Submitted Evidence</h3>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
-                <img 
-                  src="https://images.unsplash.com/photo-1590486803833-1c5dc8ddd4c8?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80" 
-                  alt="Evidence" 
-                  className="aspect-square object-cover rounded-lg border border-gray-200"
-                />
-                <img 
-                  src="https://images.unsplash.com/photo-1576482316642-48cf1c400f14?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80" 
-                  alt="Evidence" 
-                  className="aspect-square object-cover rounded-lg border border-gray-200"
-                />
-                <img 
-                  src="https://images.unsplash.com/photo-1594717527389-a590b56e331d?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80" 
-                  alt="Evidence" 
-                  className="aspect-square object-cover rounded-lg border border-gray-200"
-                />
+                {uploadedImages.map((img, index) => (
+                  <img 
+                    key={index}
+                    src={img} 
+                    alt={`Evidence ${index + 1}`} 
+                    className="aspect-square object-cover rounded-lg border border-gray-200"
+                  />
+                ))}
               </div>
               
               <div className="border-t border-gray-200 pt-6">
@@ -84,21 +107,27 @@ const ViewDraftReport = () => {
             </div>
             
             <div className="flex flex-col sm:flex-row gap-4">
-              <Link to="/continue-report" className="flex-1">
-                <Button className="w-full bg-shield-blue text-white hover:bg-blue-600 transition-all">
-                  <Edit className="mr-2 h-4 w-4" /> Continue Editing
-                </Button>
-              </Link>
+              <Button 
+                className="w-full bg-shield-blue text-white hover:bg-blue-600 transition-all"
+                onClick={handleEditReport}
+              >
+                <Edit className="mr-2 h-4 w-4" /> Continue Editing
+              </Button>
               
-              <Button variant="outline" className="border-gray-300 text-gray-700 hover:bg-gray-100 hover:text-gray-900 transition-all flex-1">
+              <Button 
+                variant="outline" 
+                className="border-gray-300 text-gray-700 hover:bg-gray-100 hover:text-gray-900 transition-all flex-1"
+                onClick={handleDownloadDraft}
+              >
                 <Download className="mr-2 h-4 w-4" /> Download Draft
               </Button>
               
-              <Link to="/generate-detailed-report" className="flex-1">
-                <Button className="w-full bg-green-600 text-white hover:bg-green-700 transition-all">
-                  <FileText className="mr-2 h-4 w-4" /> Generate Full Report
-                </Button>
-              </Link>
+              <Button 
+                className="w-full bg-green-600 text-white hover:bg-green-700 transition-all"
+                onClick={handleGenerateFullReport}
+              >
+                <FileText className="mr-2 h-4 w-4" /> Generate Full Report
+              </Button>
             </div>
           </div>
         </div>

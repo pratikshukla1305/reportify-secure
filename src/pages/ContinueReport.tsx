@@ -1,12 +1,48 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
-import { Link } from 'react-router-dom';
-import { FileText, Save, X, Eye } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { FileText, Save, X, Eye, Image } from 'lucide-react';
+import { toast } from 'sonner';
 
 const ContinueReport = () => {
+  const navigate = useNavigate();
+  const [uploadedImages, setUploadedImages] = useState<string[]>([]);
+  const [isProcessing, setIsProcessing] = useState(false);
+  
+  useEffect(() => {
+    const savedImages = sessionStorage.getItem('uploadedImages');
+    if (savedImages) {
+      setUploadedImages(JSON.parse(savedImages));
+    } else {
+      // If no images are found, we can redirect back to upload
+      toast.error("No uploaded images found");
+    }
+  }, []);
+
+  const handleContinueEditing = () => {
+    // Simulate processing
+    setIsProcessing(true);
+    setTimeout(() => {
+      setIsProcessing(false);
+      navigate("/view-draft-report");
+    }, 1500);
+  };
+  
+  const handleViewDraft = () => {
+    navigate("/view-draft-report");
+  };
+  
+  const handleCancelReport = () => {
+    navigate("/cancel-report");
+  };
+  
+  const handleGenerateReport = () => {
+    navigate("/generate-detailed-report");
+  };
+
   return (
     <div className="min-h-screen bg-white">
       <Navbar />
@@ -34,18 +70,31 @@ const ContinueReport = () => {
               <div className="grid grid-cols-2 gap-4 mb-4">
                 <div>
                   <p className="text-sm text-gray-500 mb-1">Created On</p>
-                  <p className="font-medium">July 15, 2023</p>
+                  <p className="font-medium">{new Date().toLocaleDateString()}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-500 mb-1">Last Updated</p>
-                  <p className="font-medium">July 16, 2023</p>
+                  <p className="font-medium">{new Date().toLocaleDateString()}</p>
                 </div>
               </div>
               
               <div className="mb-4">
                 <p className="text-sm text-gray-500 mb-1">Description</p>
-                <p className="font-medium">Incident report for downtown area - 3 images uploaded</p>
+                <p className="font-medium">Incident report - {uploadedImages.length} images uploaded</p>
               </div>
+              
+              {uploadedImages.length > 0 && (
+                <div className="mb-4">
+                  <p className="text-sm text-gray-500 mb-2">Uploaded Evidence</p>
+                  <div className="grid grid-cols-4 gap-2">
+                    {uploadedImages.map((img, index) => (
+                      <div key={index} className="aspect-square relative rounded-md overflow-hidden border border-gray-200">
+                        <img src={img} alt={`Evidence ${index + 1}`} className="w-full h-full object-cover" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
               
               <div>
                 <p className="text-sm text-gray-500 mb-1">Completion</p>
@@ -57,31 +106,42 @@ const ContinueReport = () => {
             </div>
             
             <div className="flex flex-col sm:flex-row gap-4">
-              <Button className="bg-shield-blue text-white hover:bg-blue-600 transition-all flex-1">
-                <Save className="mr-2 h-4 w-4" /> Continue Editing
+              <Button 
+                className="bg-shield-blue text-white hover:bg-blue-600 transition-all flex-1"
+                onClick={handleContinueEditing}
+                disabled={isProcessing}
+              >
+                <Save className="mr-2 h-4 w-4" /> 
+                {isProcessing ? "Processing..." : "Continue Editing"}
               </Button>
               
-              <Link to="/view-draft-report" className="flex-1">
-                <Button variant="outline" className="w-full border-shield-blue text-shield-blue hover:bg-shield-blue hover:text-white transition-all">
-                  <Eye className="mr-2 h-4 w-4" /> View Draft
-                </Button>
-              </Link>
+              <Button 
+                variant="outline" 
+                className="w-full border-shield-blue text-shield-blue hover:bg-shield-blue hover:text-white transition-all"
+                onClick={handleViewDraft}
+              >
+                <Eye className="mr-2 h-4 w-4" /> View Draft
+              </Button>
               
-              <Link to="/cancel-report" className="flex-1">
-                <Button variant="outline" className="w-full border-red-500 text-red-500 hover:bg-red-500 hover:text-white transition-all">
-                  <X className="mr-2 h-4 w-4" /> Cancel Report
-                </Button>
-              </Link>
+              <Button 
+                variant="outline" 
+                className="w-full border-red-500 text-red-500 hover:bg-red-500 hover:text-white transition-all"
+                onClick={handleCancelReport}
+              >
+                <X className="mr-2 h-4 w-4" /> Cancel Report
+              </Button>
             </div>
           </div>
           
           <div className="text-center">
             <p className="text-gray-600 mb-4">Ready to finalize your report?</p>
-            <Link to="/generate-detailed-report">
-              <Button size="lg" className="bg-green-600 text-white hover:bg-green-700 transition-all">
-                Generate Detailed Report
-              </Button>
-            </Link>
+            <Button 
+              size="lg" 
+              className="bg-green-600 text-white hover:bg-green-700 transition-all"
+              onClick={handleGenerateReport}
+            >
+              Generate Detailed Report
+            </Button>
           </div>
         </div>
       </section>
