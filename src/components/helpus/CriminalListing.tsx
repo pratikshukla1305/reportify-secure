@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, MapPin, Info } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -14,14 +14,27 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useNavigate } from 'react-router-dom';
-import { wantedIndividuals } from '@/data/wantedIndividuals';
+import { getWantedIndividuals, WantedIndividual } from '@/data/wantedIndividuals';
 
 const CriminalListing = () => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCriminal, setSelectedCriminal] = useState<any>(null);
+  const [selectedCriminal, setSelectedCriminal] = useState<WantedIndividual | null>(null);
+  const [criminals, setCriminals] = useState<WantedIndividual[]>([]);
   const navigate = useNavigate();
   
-  const filteredCriminals = wantedIndividuals.filter(criminal => 
+  // Load the latest data whenever the component mounts or is focused
+  useEffect(() => {
+    setCriminals(getWantedIndividuals());
+    
+    // Also set up a refresh interval to check for new data periodically
+    const intervalId = setInterval(() => {
+      setCriminals(getWantedIndividuals());
+    }, 30000); // Check every 30 seconds
+    
+    return () => clearInterval(intervalId);
+  }, []);
+  
+  const filteredCriminals = criminals.filter(criminal => 
     criminal.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     criminal.charges.toLowerCase().includes(searchQuery.toLowerCase()) ||
     criminal.lastKnownLocation.toLowerCase().includes(searchQuery.toLowerCase())

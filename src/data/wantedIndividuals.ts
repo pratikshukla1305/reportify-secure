@@ -16,7 +16,8 @@ export interface WantedIndividual {
   description?: string;
 }
 
-export const wantedIndividuals: WantedIndividual[] = [
+// Initial data
+let wantedIndividualsData: WantedIndividual[] = [
   {
     id: '1',
     name: 'John Doe',
@@ -96,3 +97,16 @@ export const wantedIndividuals: WantedIndividual[] = [
     description: 'Has a history of violence and should not be approached by the public.'
   }
 ];
+
+// Getter for the wanted individuals data
+export const getWantedIndividuals = (): WantedIndividual[] => {
+  return [...wantedIndividualsData];
+};
+
+// Setter for the wanted individuals data
+export const updateWantedIndividuals = (newData: WantedIndividual[]): void => {
+  wantedIndividualsData = [...newData];
+};
+
+// Export the current data for backward compatibility
+export const wantedIndividuals = getWantedIndividuals();

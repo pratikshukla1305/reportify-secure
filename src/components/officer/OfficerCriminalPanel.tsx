@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Card, 
   CardContent, 
@@ -28,7 +27,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from '@/hooks/use-toast';
-import { wantedIndividuals, WantedIndividual } from '@/data/wantedIndividuals';
+import { getWantedIndividuals, updateWantedIndividuals, WantedIndividual } from '@/data/wantedIndividuals';
 
 // Mock tips data
 const mockTips = [
@@ -82,7 +81,7 @@ interface CriminalFormData {
 }
 
 const OfficerCriminalPanel = () => {
-  const [criminalData, setCriminalData] = useState<WantedIndividual[]>(wantedIndividuals);
+  const [criminalData, setCriminalData] = useState<WantedIndividual[]>([]);
   const [tipData, setTipData] = useState(mockTips);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCriminal, setSelectedCriminal] = useState<WantedIndividual | null>(null);
@@ -95,7 +94,6 @@ const OfficerCriminalPanel = () => {
   const [tipStatus, setTipStatus] = useState('new');
   const [isEditing, setIsEditing] = useState(false);
   
-  // Form state for adding/editing criminals
   const [formData, setFormData] = useState<CriminalFormData>({
     id: '',
     name: '',
@@ -139,6 +137,10 @@ const OfficerCriminalPanel = () => {
     );
   };
   
+  useEffect(() => {
+    setCriminalData(getWantedIndividuals());
+  }, []);
+  
   const handleViewCriminalDetails = (criminal: WantedIndividual) => {
     setSelectedCriminal(criminal);
     setCriminalDetailsOpen(true);
@@ -151,7 +153,6 @@ const OfficerCriminalPanel = () => {
   };
   
   const handleAddCriminal = () => {
-    // Reset form
     setFormData({
       id: '',
       name: '',
@@ -184,9 +185,9 @@ const OfficerCriminalPanel = () => {
   
   const handleDeleteConfirm = () => {
     if (selectedCriminal) {
-      // Filter out the criminal to delete
       const updatedCriminals = criminalData.filter(c => c.id !== selectedCriminal.id);
       setCriminalData(updatedCriminals);
+      updateWantedIndividuals(updatedCriminals);
       
       toast({
         title: "Profile deleted",
@@ -198,7 +199,6 @@ const OfficerCriminalPanel = () => {
   };
   
   const handleSaveCriminal = () => {
-    // Validate form
     if (!formData.name || !formData.charges || !formData.lastKnownLocation || !formData.caseNumber) {
       toast({
         title: "Missing information",
@@ -208,7 +208,6 @@ const OfficerCriminalPanel = () => {
       return;
     }
     
-    // Create a new criminal object that conforms to WantedIndividual type
     const criminalToSave: WantedIndividual = {
       id: formData.id || `${Date.now()}`,
       name: formData.name,
@@ -223,20 +222,23 @@ const OfficerCriminalPanel = () => {
       description: formData.description
     };
     
+    let updatedCriminals: WantedIndividual[];
+    
     if (isEditing) {
-      // Update existing criminal
-      const updatedCriminals = criminalData.map(c => 
+      updatedCriminals = criminalData.map(c => 
         c.id === formData.id ? criminalToSave : c
       );
       setCriminalData(updatedCriminals);
+      updateWantedIndividuals(updatedCriminals);
       
       toast({
         title: "Profile updated",
         description: `Criminal profile for "${formData.name}" has been updated.`,
       });
     } else {
-      // Add new criminal
-      setCriminalData([...criminalData, criminalToSave]);
+      updatedCriminals = [...criminalData, criminalToSave];
+      setCriminalData(updatedCriminals);
+      updateWantedIndividuals(updatedCriminals);
       
       toast({
         title: "Profile created",
@@ -249,7 +251,6 @@ const OfficerCriminalPanel = () => {
   
   const handleUpdateTipStatus = () => {
     if (selectedTip) {
-      // Update tip status
       const updatedTips = tipData.map(t => 
         t.id === selectedTip.id ? { ...t, status: tipStatus } : t
       );
