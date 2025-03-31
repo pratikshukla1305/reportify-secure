@@ -30,6 +30,7 @@ import AdvisoryPage from "./pages/AdvisoryPage";
 import AboutUs from "./pages/AboutUs";
 import OfficerLogin from "./pages/OfficerLogin";
 import OfficerRegistration from "./pages/OfficerRegistration";
+import OfficerDashboard from "./pages/OfficerDashboard";
 
 const queryClient = new QueryClient();
 
@@ -65,6 +66,7 @@ const App = () => (
           <Route path="/advisory" element={<AdvisoryPage />} />
           <Route path="/officer-login" element={<OfficerLogin />} />
           <Route path="/officer-registration" element={<OfficerRegistration />} />
+          <Route path="/officer-dashboard" element={<OfficerDashboard />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
