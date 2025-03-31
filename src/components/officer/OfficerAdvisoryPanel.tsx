@@ -36,7 +36,7 @@ interface AdvisoryFormData {
   description: string;
   date: string;
   location: string;
-  severity: string;
+  severity: string; // Making this required to match the interface
   issueAuthority: string;
   expiryDate?: string;
   imageUrl?: string;
@@ -62,7 +62,7 @@ const OfficerAdvisoryPanel = () => {
     description: '',
     date: '',
     location: '',
-    severity: 'medium',
+    severity: 'medium', // Default value since it's required
     issueAuthority: '',
     expiryDate: '',
     imageUrl: '',
@@ -130,10 +130,20 @@ const OfficerAdvisoryPanel = () => {
   };
   
   const handleEditAdvisory = (advisory: Advisory) => {
+    // Copy advisory data to form data, ensuring all required fields are populated
     setFormData({
-      ...advisory,
+      id: advisory.id,
+      title: advisory.title,
+      type: advisory.type,
+      description: advisory.description,
       date: advisory.date,
+      location: advisory.location,
+      severity: advisory.severity || 'medium', // Default if missing
+      issueAuthority: advisory.issueAuthority || '',
       expiryDate: advisory.expiryDate || '',
+      imageUrl: advisory.imageUrl,
+      content: advisory.content || '',
+      regions: [],
     });
     setIsEditing(true);
     setAddEditOpen(true);
@@ -608,3 +618,4 @@ const OfficerAdvisoryPanel = () => {
 };
 
 export default OfficerAdvisoryPanel;
+

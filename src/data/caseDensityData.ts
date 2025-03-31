@@ -9,11 +9,12 @@ export interface CaseDensityData {
     address?: string;
   };
   description?: string;
-  caseType?: string;
+  caseType?: string; // Will be used in place of 'type'
   caseNumber?: string;
   status?: string;
   reporterId?: string;
   count: number;
+  type?: string; // Add this to align with the existing filters in CaseHeatmap
 }
 
 export const caseDensityData: CaseDensityData[] = [
@@ -27,6 +28,7 @@ export const caseDensityData: CaseDensityData[] = [
     },
     description: 'Multiple reports of pickpocketing in crowded areas',
     caseType: 'theft',
+    type: 'theft', // Adding this for consistency with the filters
     caseNumber: 'TH-2023-0142',
     status: 'investigating',
     timestamp: new Date('2023-05-15').toISOString(),
@@ -42,6 +44,7 @@ export const caseDensityData: CaseDensityData[] = [
     },
     description: 'Residential break-ins reported in the last month',
     caseType: 'burglary',
+    type: 'burglary',
     caseNumber: 'BG-2023-0089',
     status: 'open',
     timestamp: new Date('2023-05-20').toISOString(),
@@ -57,6 +60,7 @@ export const caseDensityData: CaseDensityData[] = [
     },
     description: 'Vehicle vandalism in parking garages',
     caseType: 'vandalism',
+    type: 'vandalism',
     caseNumber: 'VD-2023-0117',
     status: 'investigating',
     timestamp: new Date('2023-05-18').toISOString(),
@@ -72,6 +76,7 @@ export const caseDensityData: CaseDensityData[] = [
     },
     description: 'Credit card skimming at ATMs',
     caseType: 'fraud',
+    type: 'fraud',
     caseNumber: 'FR-2023-0201',
     status: 'investigating',
     timestamp: new Date('2023-05-14').toISOString(),
@@ -87,6 +92,7 @@ export const caseDensityData: CaseDensityData[] = [
     },
     description: 'Multiple assault reports in nightlife areas',
     caseType: 'assault',
+    type: 'assault',
     caseNumber: 'AS-2023-0078',
     status: 'investigating',
     timestamp: new Date('2023-05-21').toISOString(),
@@ -102,9 +108,11 @@ export const caseDensityData: CaseDensityData[] = [
     },
     description: 'Phone thefts from joggers',
     caseType: 'theft',
+    type: 'theft',
     caseNumber: 'TH-2023-0158',
     status: 'resolved',
     timestamp: new Date('2023-05-10').toISOString(),
     count: 9
   }
 ];
+

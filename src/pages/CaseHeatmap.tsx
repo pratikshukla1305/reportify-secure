@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -46,7 +47,8 @@ const CaseHeatmap = () => {
   });
 
   const totalCases = filteredCaseData.reduce((sum, item) => sum + item.count, 0);
-  const highestDensityArea = [...filteredCaseData].sort((a, b) => b.count - a.count)[0]?.location || "N/A";
+  // Fix this line to handle location object correctly
+  const highestDensityArea = [...filteredCaseData].sort((a, b) => b.count - a.count)[0]?.region || "N/A";
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -226,7 +228,7 @@ const CaseHeatmap = () => {
                 <div className="space-y-4">
                   {filteredCaseData.map(item => (
                     <div key={item.id} className="flex items-center">
-                      <div className="w-1/3 text-gray-700">{item.location}</div>
+                      <div className="w-1/3 text-gray-700">{item.region}</div>
                       <div className="w-2/3">
                         <div className="flex items-center">
                           <div 
@@ -260,3 +262,4 @@ const CaseHeatmap = () => {
 };
 
 export default CaseHeatmap;
+
