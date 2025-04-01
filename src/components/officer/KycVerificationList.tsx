@@ -18,6 +18,8 @@ import {
   updateKycVerificationStatus, 
   KycVerification
 } from '@/data/kycVerificationsData';
+import { Label } from '@/components/ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface KycVerificationListProps {
   limit?: number;
@@ -27,6 +29,7 @@ const KycVerificationList = ({ limit }: KycVerificationListProps) => {
   const [verifications, setVerifications] = useState<KycVerification[]>([]);
   const [selectedVerification, setSelectedVerification] = useState<KycVerification | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState('details');
   const { toast } = useToast();
 
   useEffect(() => {
@@ -42,6 +45,7 @@ const KycVerificationList = ({ limit }: KycVerificationListProps) => {
   const handleView = (verification: KycVerification) => {
     setSelectedVerification(verification);
     setIsDialogOpen(true);
+    setActiveTab('details');
   };
 
   const handleApprove = (id: string) => {
@@ -162,7 +166,7 @@ const KycVerificationList = ({ limit }: KycVerificationListProps) => {
       {/* Detail Dialog */}
       {selectedVerification && (
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>KYC Verification Details</DialogTitle>
               <DialogDescription>
@@ -170,46 +174,103 @@ const KycVerificationList = ({ limit }: KycVerificationListProps) => {
               </DialogDescription>
             </DialogHeader>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4">
-              <div>
-                <h4 className="font-medium mb-2">Personal Information</h4>
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Avatar>
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-4">
+              <TabsList className="grid grid-cols-3 mb-4">
+                <TabsTrigger value="details">User Details</TabsTrigger>
+                <TabsTrigger value="documents">ID Documents</TabsTrigger>
+                <TabsTrigger value="selfie">Selfie</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="details" className="py-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex items-center gap-2 mb-4 col-span-2">
+                    <Avatar className="h-14 w-14">
                       <AvatarImage src={selectedVerification.photo} alt={selectedVerification.name} />
                       <AvatarFallback>{selectedVerification.name.charAt(0)}</AvatarFallback>
                     </Avatar>
                     <div>
-                      <p className="font-medium">{selectedVerification.name}</p>
+                      <p className="font-medium text-lg">{selectedVerification.name}</p>
                       <p className="text-sm text-gray-500">{selectedVerification.email}</p>
+                      <div className="mt-1">{getStatusBadge(selectedVerification.status)}</div>
                     </div>
                   </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Submission Date</p>
-                    <p className="font-medium">
-                      {new Date(selectedVerification.submissionDate).toLocaleString()}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Status</p>
-                    <div className="mt-1">{getStatusBadge(selectedVerification.status)}</div>
+                  
+                  <div className="space-y-2 col-span-2">
+                    <h3 className="text-sm font-medium text-gray-500">Personal Information</h3>
+                    
+                    <div className="grid grid-cols-2 gap-4 border rounded-lg p-4">
+                      <div>
+                        <Label className="text-xs text-gray-500">Full Name</Label>
+                        <p className="font-medium">{selectedVerification.name}</p>
+                      </div>
+                      <div>
+                        <Label className="text-xs text-gray-500">Email</Label>
+                        <p className="font-medium">{selectedVerification.email}</p>
+                      </div>
+                      <div>
+                        <Label className="text-xs text-gray-500">Submission Date</Label>
+                        <p className="font-medium">
+                          {new Date(selectedVerification.submissionDate).toLocaleString()}
+                        </p>
+                      </div>
+                      <div>
+                        <Label className="text-xs text-gray-500">Status</Label>
+                        <div className="mt-1">{getStatusBadge(selectedVerification.status)}</div>
+                      </div>
+                      
+                      {selectedVerification.reviewDate && (
+                        <>
+                          <div>
+                            <Label className="text-xs text-gray-500">Review Date</Label>
+                            <p className="font-medium">
+                              {new Date(selectedVerification.reviewDate).toLocaleString()}
+                            </p>
+                          </div>
+                          {selectedVerification.reviewedBy && (
+                            <div>
+                              <Label className="text-xs text-gray-500">Reviewed By</Label>
+                              <p className="font-medium">{selectedVerification.reviewedBy}</p>
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
+              </TabsContent>
               
-              <div>
-                <h4 className="font-medium mb-2">Identification Document</h4>
-                <div className="border rounded-md overflow-hidden">
-                  <img 
-                    src={selectedVerification.document} 
-                    alt="ID Document" 
-                    className="w-full h-auto"
-                  />
+              <TabsContent value="documents" className="py-2">
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-500 mb-2">ID Document</h3>
+                    <div className="border rounded-md overflow-hidden">
+                      <img 
+                        src={selectedVerification.document} 
+                        alt="ID Document" 
+                        className="w-full h-auto"
+                      />
+                    </div>
+                  </div>
+                  
+                  {/* We'd add back document here too if it was available in the data */}
                 </div>
-              </div>
-            </div>
+              </TabsContent>
+              
+              <TabsContent value="selfie" className="py-2">
+                <div>
+                  <h3 className="text-sm font-medium text-gray-500 mb-2">User Selfie</h3>
+                  <div className="border rounded-md overflow-hidden flex justify-center">
+                    <img 
+                      src={selectedVerification.photo} 
+                      alt="User Selfie" 
+                      className="max-h-80"
+                    />
+                  </div>
+                </div>
+              </TabsContent>
+            </Tabs>
             
-            <DialogFooter className="gap-2">
+            <DialogFooter className="gap-2 mt-4">
               {selectedVerification.status === 'pending' && (
                 <>
                   <Button

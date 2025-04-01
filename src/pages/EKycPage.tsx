@@ -115,6 +115,7 @@ const EKycPage = () => {
                 <KycVerification 
                   userId="user-123"
                   onComplete={handleVerificationComplete}
+                  formData={kycData}
                 />
               </TabsContent>
               
