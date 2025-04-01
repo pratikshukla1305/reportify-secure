@@ -6,11 +6,16 @@ import { Check, X, Clock, AlertTriangle } from 'lucide-react';
 import { getUserVerificationStatus, VerificationStatus } from '@/data/kycVerificationsData';
 
 interface KycCompletedProps {
-  status: VerificationStatus;
+  status?: VerificationStatus;
   userId?: string;
+  onReset?: () => void; // Add the missing prop
 }
 
-const KycCompleted = ({ status: initialStatus, userId = "user-123" }: KycCompletedProps) => {
+const KycCompleted = ({ 
+  status: initialStatus = 'pending',
+  userId = "user-123",
+  onReset 
+}: KycCompletedProps) => {
   const [status, setStatus] = useState<VerificationStatus>(initialStatus);
   
   // Poll for status updates (in a real app this would use websockets or a real-time database)
@@ -93,7 +98,10 @@ const KycCompleted = ({ status: initialStatus, userId = "user-123" }: KycComplet
       </CardContent>
       <CardFooter className="flex justify-center">
         {status === 'rejected' && (
-          <Button className="w-full max-w-xs" onClick={() => window.location.reload()}>
+          <Button 
+            className="w-full max-w-xs" 
+            onClick={onReset ? onReset : () => window.location.reload()}
+          >
             Try Again
           </Button>
         )}

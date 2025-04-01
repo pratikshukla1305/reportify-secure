@@ -113,13 +113,14 @@ const EKycPage = () => {
               
               <TabsContent value="verification" className="mt-0">
                 <KycVerification 
-                  formData={kycData}
+                  userId="user-123"
                   onComplete={handleVerificationComplete}
                 />
               </TabsContent>
               
               <TabsContent value="completed" className="mt-0">
                 <KycCompleted 
+                  status="pending"
                   onReset={handleKycReset}
                 />
               </TabsContent>
