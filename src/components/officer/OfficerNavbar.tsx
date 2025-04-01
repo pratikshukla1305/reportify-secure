@@ -16,6 +16,17 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/components/ui/use-toast';
 
+// Define notification type
+interface Notification {
+  id: string;
+  title: string;
+  description: string;
+  time: string;
+  read: boolean;
+  type: 'sos' | 'kyc' | 'tip' | 'system';
+  linkTo: string;
+}
+
 const OfficerNavbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -28,8 +39,50 @@ const OfficerNavbar = () => {
     name: "Officer John Smith",
     badge: "P-12345",
     avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=150&q=80",
-    notifications: 5
   };
+
+  // Example notifications - in a real app, this would come from a database or API
+  const [notifications, setNotifications] = useState<Notification[]>([
+    {
+      id: "notif-1",
+      title: "New SOS Alert",
+      description: "Downtown Central Square, 5 minutes ago",
+      time: "5 minutes ago",
+      read: false,
+      type: "sos",
+      linkTo: "/officer-dashboard?tab=sos"
+    },
+    {
+      id: "notif-2",
+      title: "KYC Verification Pending",
+      description: "5 new users waiting for verification",
+      time: "30 minutes ago",
+      read: false,
+      type: "kyc",
+      linkTo: "/officer-dashboard?tab=kyc"
+    },
+    {
+      id: "notif-3",
+      title: "New Tip Received",
+      description: "Information about wanted individual #1042",
+      time: "2 hours ago",
+      read: false,
+      type: "tip",
+      linkTo: "/officer-dashboard?tab=criminals"
+    },
+    {
+      id: "notif-4",
+      title: "System Maintenance",
+      description: "Scheduled maintenance in 24 hours",
+      time: "1 day ago",
+      read: true,
+      type: "system",
+      linkTo: "/officer-dashboard"
+    }
+  ]);
+
+  // Get the number of unread notifications
+  const unreadNotificationsCount = notifications.filter(notif => !notif.read).length;
 
   useEffect(() => {
     const handleScroll = () => {
@@ -67,16 +120,36 @@ const OfficerNavbar = () => {
   };
 
   const handleViewProfile = () => {
-    toast({
-      title: "Profile",
-      description: "Viewing officer profile (feature in development)",
-    });
+    navigate('/officer-profile');
   };
 
   const handleSettings = () => {
+    navigate('/officer-settings');
+  };
+
+  // Handle notification click
+  const handleNotificationClick = (notification: Notification) => {
+    // Mark notification as read
+    setNotifications(prevNotifications => 
+      prevNotifications.map(notif => 
+        notif.id === notification.id ? { ...notif, read: true } : notif
+      )
+    );
+    
+    // Navigate to the relevant page
+    navigate(notification.linkTo);
+  };
+
+  // View all notifications
+  const handleViewAllNotifications = () => {
+    // Mark all notifications as read
+    setNotifications(prevNotifications => 
+      prevNotifications.map(notif => ({ ...notif, read: true }))
+    );
+    
     toast({
-      title: "Settings",
-      description: "Officer portal settings (feature in development)",
+      title: "Notifications",
+      description: "All notifications marked as read",
     });
   };
 
@@ -145,12 +218,12 @@ const OfficerNavbar = () => {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="relative">
                   <Bell className="h-5 w-5" />
-                  {officer.notifications > 0 && (
+                  {unreadNotificationsCount > 0 && (
                     <Badge 
                       className="absolute -top-1 -right-1 px-1.5 py-0.5 min-w-[20px] min-h-[20px] flex items-center justify-center text-xs" 
                       variant="destructive"
                     >
-                      {officer.notifications}
+                      {unreadNotificationsCount}
                     </Badge>
                   )}
                 </Button>
@@ -159,22 +232,33 @@ const OfficerNavbar = () => {
                 <DropdownMenuLabel>Notifications</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <div className="max-h-60 overflow-y-auto">
-                  <DropdownMenuItem className="flex flex-col items-start cursor-pointer">
-                    <div className="font-medium">New SOS Alert</div>
-                    <div className="text-xs text-gray-500">Downtown Central Square, 5 minutes ago</div>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem className="flex flex-col items-start cursor-pointer">
-                    <div className="font-medium">KYC Verification Pending</div>
-                    <div className="text-xs text-gray-500">5 new users waiting for verification</div>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem className="flex flex-col items-start cursor-pointer">
-                    <div className="font-medium">New Tip Received</div>
-                    <div className="text-xs text-gray-500">Information about wanted individual #1042</div>
-                  </DropdownMenuItem>
+                  {notifications.length > 0 ? (
+                    notifications.map(notification => (
+                      <DropdownMenuItem 
+                        key={notification.id} 
+                        className={cn(
+                          "flex flex-col items-start cursor-pointer p-3",
+                          !notification.read && "bg-blue-50"
+                        )}
+                        onClick={() => handleNotificationClick(notification)}
+                      >
+                        <div className="font-medium">{notification.title}</div>
+                        <div className="text-xs text-gray-500">{notification.description}</div>
+                        <div className="text-xs text-gray-400 mt-1">{notification.time}</div>
+                      </DropdownMenuItem>
+                    ))
+                  ) : (
+                    <div className="p-3 text-center text-sm text-gray-500">
+                      No notifications
+                    </div>
+                  )}
                 </div>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem className="text-blue-600 cursor-pointer justify-center">
-                  View all notifications
+                <DropdownMenuItem 
+                  className="text-blue-600 cursor-pointer justify-center"
+                  onClick={handleViewAllNotifications}
+                >
+                  Mark all as read
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -221,12 +305,12 @@ const OfficerNavbar = () => {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="relative">
                   <Bell className="h-5 w-5" />
-                  {officer.notifications > 0 && (
+                  {unreadNotificationsCount > 0 && (
                     <Badge 
                       className="absolute -top-1 -right-1 px-1.5 py-0.5 min-w-[20px] min-h-[20px] flex items-center justify-center text-xs" 
                       variant="destructive"
                     >
-                      {officer.notifications}
+                      {unreadNotificationsCount}
                     </Badge>
                   )}
                 </Button>
@@ -235,15 +319,28 @@ const OfficerNavbar = () => {
                 <DropdownMenuLabel>Notifications</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <div className="max-h-60 overflow-y-auto">
-                  <DropdownMenuItem className="flex flex-col items-start cursor-pointer">
-                    <div className="font-medium">New SOS Alert</div>
-                    <div className="text-xs text-gray-500">Downtown Central Square, 5 minutes ago</div>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem className="flex flex-col items-start cursor-pointer">
-                    <div className="font-medium">KYC Verification Pending</div>
-                    <div className="text-xs text-gray-500">5 new users waiting for verification</div>
-                  </DropdownMenuItem>
+                  {notifications.map(notification => (
+                    <DropdownMenuItem 
+                      key={notification.id} 
+                      className={cn(
+                        "flex flex-col items-start cursor-pointer p-3",
+                        !notification.read && "bg-blue-50"
+                      )}
+                      onClick={() => handleNotificationClick(notification)}
+                    >
+                      <div className="font-medium">{notification.title}</div>
+                      <div className="text-xs text-gray-500">{notification.description}</div>
+                      <div className="text-xs text-gray-400 mt-1">{notification.time}</div>
+                    </DropdownMenuItem>
+                  ))}
                 </div>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem 
+                  className="text-blue-600 cursor-pointer justify-center"
+                  onClick={handleViewAllNotifications}
+                >
+                  Mark all as read
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
             
@@ -319,10 +416,26 @@ const OfficerNavbar = () => {
               Case Mapping
             </Button>
             
-            <div className="border-t border-gray-100 pt-4">
+            <div className="border-t border-gray-100 pt-4 space-y-2">
               <Button 
                 variant="ghost"
-                className="flex items-center text-red-600 font-medium"
+                className="block w-full justify-start text-base font-medium text-gray-700 hover:text-shield-blue transition-colors"
+                onClick={handleViewProfile}
+              >
+                <User className="h-4 w-4 mr-2" />
+                My Profile
+              </Button>
+              <Button 
+                variant="ghost"
+                className="block w-full justify-start text-base font-medium text-gray-700 hover:text-shield-blue transition-colors"
+                onClick={handleSettings}
+              >
+                <Settings className="h-4 w-4 mr-2" />
+                Settings
+              </Button>
+              <Button 
+                variant="ghost"
+                className="block w-full justify-start text-base font-medium text-red-600 hover:text-red-700 transition-colors"
                 onClick={handleLogout}
               >
                 <LogOut className="h-4 w-4 mr-2" />

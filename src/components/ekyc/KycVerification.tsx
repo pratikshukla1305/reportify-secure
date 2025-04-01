@@ -1,652 +1,350 @@
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Camera, Loader2, RotateCw, Shield, UserCheck, CameraOff, AlertTriangle } from 'lucide-react';
-import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { useToast } from '@/hooks/use-toast';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { useToast } from '@/components/ui/use-toast';
+import { Upload, Camera, Check, X, AlertTriangle } from 'lucide-react';
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogDescription,
+  DialogFooter, 
+  DialogHeader, 
+  DialogTitle 
+} from '@/components/ui/dialog';
+import KycCompleted from './KycCompleted';
+import { 
+  getUserVerificationStatus, 
+  addKycVerification, 
+  VerificationStatus 
+} from '@/data/kycVerificationsData';
 
-// Define the props type
-type KycVerificationProps = {
-  formData: {
-    fullName: string;
-    dob: string;
-    nationality: string;
-    idType: "passport" | "national_id" | "driving_license";
-    idNumber: string;
-    address: string;
-    phone: string;
-    email: string;
-  };
-  onComplete: () => void;
-};
+interface KycVerificationProps {
+  userId: string; // In a real app, this would come from auth context
+}
 
-const KycVerification = ({ formData, onComplete }: KycVerificationProps) => {
+const KycVerification = ({ userId = "user-123" }: KycVerificationProps) => {
   const [step, setStep] = useState(1);
-  const [frontIdImage, setFrontIdImage] = useState<string | null>(null);
-  const [backIdImage, setBackIdImage] = useState<string | null>(null);
-  const [selfieImage, setSelfieImage] = useState<string | null>(null);
-  const [cameraOpen, setCameraOpen] = useState(false);
-  const [currentCaptureType, setCurrentCaptureType] = useState<'frontId' | 'backId' | 'selfie' | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [verificationStatus, setVerificationStatus] = useState<'pending' | 'processing' | 'completed' | 'mismatch'>('pending');
-  const [hasCamera, setHasCamera] = useState(true);
-  const [cameraError, setCameraError] = useState<string | null>(null);
-  const [extractedData, setExtractedData] = useState<{
-    fullName?: string;
-    dob?: string;
-    idNumber?: string;
-  } | null>(null);
-  const [dataDiscrepancy, setDataDiscrepancy] = useState<{
-    field: string;
-    submittedValue: string;
-    extractedValue: string;
-  }[] | null>(null);
-  const [correctedData, setCorrectedData] = useState<{
-    fullName?: string;
-    dob?: string;
-    idNumber?: string;
-  }>({});
-  
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const streamRef = useRef<MediaStream | null>(null);
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [documentFile, setDocumentFile] = useState<File | null>(null);
+  const [documentPreview, setDocumentPreview] = useState<string | null>(null);
+  const [selfieFile, setSelfieFile] = useState<File | null>(null);
+  const [selfiePreview, setSelfiePreview] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [verificationStatus, setVerificationStatus] = useState<VerificationStatus | 'none'>('none');
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
   const { toast } = useToast();
   
-  // Handle camera open
-  const openCamera = (type: 'frontId' | 'backId' | 'selfie') => {
-    setCurrentCaptureType(type);
-    setCameraOpen(true);
-    setCameraError(null);
-  };
-
-  // Start camera when dialog opens
   useEffect(() => {
-    if (cameraOpen) {
-      startCamera();
-    } else {
-      stopCamera();
+    // Check if the user already has a verification status
+    const status = getUserVerificationStatus(userId);
+    setVerificationStatus(status);
+    
+    // For demo purposes, pre-fill form data
+    setName('John Doe');
+    setEmail('john.doe@example.com');
+  }, [userId]);
+
+  const handleDocumentUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setDocumentFile(file);
+      
+      // Create preview URL
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setDocumentPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
     }
-  }, [cameraOpen]);
-
-  // Clean up camera on unmount
-  useEffect(() => {
-    return () => {
-      stopCamera();
-    };
-  }, []);
-
-  // Start the camera
-  const startCamera = async () => {
-    setIsLoading(true);
-    try {
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        console.error('getUserMedia is not supported in this browser');
-        setHasCamera(false);
-        setCameraError('Your browser does not support camera access.');
+  };
+  
+  const handleSelfieUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setSelfieFile(file);
+      
+      // Create preview URL
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setSelfiePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+  
+  // This would be a real camera integration in a production app
+  const handleTakeSelfie = () => {
+    setIsCameraOpen(true);
+  };
+  
+  const handleCaptureSelfie = () => {
+    // In a real app, this would capture from the camera
+    // For demo, we'll just use a sample image
+    setSelfiePreview('https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=150&q=80');
+    setIsCameraOpen(false);
+  };
+  
+  const handleNextStep = () => {
+    if (step === 1) {
+      if (!name || !email) {
         toast({
-          title: "Camera Not Supported",
-          description: "Your browser doesn't support camera access.",
+          title: "Missing Information",
+          description: "Please provide your name and email.",
           variant: "destructive"
         });
-        setIsLoading(false);
         return;
       }
-      
-      const constraints = {
-        video: {
-          facingMode: currentCaptureType === 'selfie' ? 'user' : 'environment',
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
-        }
-      };
-      
-      console.log('Attempting to access camera with constraints:', constraints);
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
-      console.log('Camera access granted, stream:', stream);
-      
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        streamRef.current = stream;
-        setHasCamera(true);
-        
-        // Log when video is ready
-        videoRef.current.onloadedmetadata = () => {
-          console.log('Video metadata loaded, video ready to play');
-          if (videoRef.current) {
-            videoRef.current.play().catch(err => {
-              console.error('Error playing video:', err);
-            });
-          }
-        };
+      setStep(2);
+    } else if (step === 2) {
+      if (!documentPreview) {
+        toast({
+          title: "Missing Document",
+          description: "Please upload your identification document.",
+          variant: "destructive"
+        });
+        return;
       }
-    } catch (error) {
-      console.error('Error accessing camera:', error);
-      setHasCamera(false);
-      setCameraError('Unable to access your camera. Please ensure camera permissions are enabled.');
+      setStep(3);
+    }
+  };
+  
+  const handlePrevStep = () => {
+    if (step > 1) {
+      setStep(step - 1);
+    }
+  };
+  
+  const handleSubmit = () => {
+    if (!selfiePreview) {
       toast({
-        title: "Camera Access Error",
-        description: "Please allow camera access to continue verification.",
+        title: "Missing Selfie",
+        description: "Please upload a selfie for facial verification.",
         variant: "destructive"
       });
-      
-      // Fallback to placeholder images if camera fails
-      generatePlaceholderImage();
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Stop the camera
-  const stopCamera = () => {
-    console.log('Stopping camera stream');
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => {
-        console.log('Stopping track:', track);
-        track.stop();
-      });
-      streamRef.current = null;
-    }
-    
-    if (videoRef.current) {
-      videoRef.current.srcObject = null;
-    }
-  };
-
-  // Simulate capture
-  const captureImage = () => {
-    setIsLoading(true);
-    
-    if (!hasCamera) {
-      // Fallback to placeholder images if no camera
-      generatePlaceholderImage();
       return;
     }
     
-    try {
-      // Create a canvas to capture the current video frame
-      const canvas = document.createElement('canvas');
-      if (videoRef.current) {
-        canvas.width = videoRef.current.videoWidth;
-        canvas.height = videoRef.current.videoHeight;
-        const ctx = canvas.getContext('2d');
-        
-        if (ctx && videoRef.current) {
-          // Draw the current video frame to the canvas
-          ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
-          
-          // Convert canvas to data URL
-          const dataUrl = canvas.toDataURL('image/png');
-          
-          if (currentCaptureType === 'frontId') {
-            setFrontIdImage(dataUrl);
-            // Simulate extracting data from ID
-            simulateDataExtraction(dataUrl);
-          } else if (currentCaptureType === 'backId') {
-            setBackIdImage(dataUrl);
-          } else if (currentCaptureType === 'selfie') {
-            setSelfieImage(dataUrl);
-          }
-          
-          toast({
-            title: "Image Captured",
-            description: "Image successfully captured.",
-          });
-        }
-      }
-    } catch (error) {
-      console.error('Error capturing image:', error);
-      toast({
-        title: "Capture Failed",
-        description: "Failed to capture image. Please try again.",
-        variant: "destructive"
-      });
-      
-      // Fallback to placeholder images
-      generatePlaceholderImage();
-    } finally {
-      setIsLoading(false);
-      setCameraOpen(false);
-      setCurrentCaptureType(null);
-    }
-  };
-  
-  // Generate a placeholder image if camera fails
-  const generatePlaceholderImage = () => {
-    // Generate a placeholder image (colored rectangle)
-    let color;
-    if (currentCaptureType === 'frontId') color = '#e3f2fd';
-    else if (currentCaptureType === 'backId') color = '#e8f5e9';
-    else color = '#fff3e0';
+    setIsSubmitting(true);
     
-    const canvas = document.createElement('canvas');
-    canvas.width = 400;
-    canvas.height = 300;
-    const ctx = canvas.getContext('2d');
-    
-    if (ctx) {
-      // Draw background
-      ctx.fillStyle = color;
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      
-      // Add some visual elements to make it look like an ID or selfie
-      ctx.fillStyle = '#333';
-      ctx.font = '16px Arial';
-      
-      if (currentCaptureType === 'frontId') {
-        ctx.fillText('ID CARD - FRONT', 150, 30);
-        // Draw a rectangle for photo area
-        ctx.strokeStyle = '#999';
-        ctx.strokeRect(30, 60, 100, 120);
-        // Draw lines for name, etc.
-        ctx.fillRect(150, 70, 200, 1);
-        ctx.fillRect(150, 100, 200, 1);
-        ctx.fillRect(150, 130, 200, 1);
-        
-        // Simulate extracted data
-        simulateDataExtraction(canvas.toDataURL('image/png'));
-      } else if (currentCaptureType === 'backId') {
-        ctx.fillText('ID CARD - BACK', 150, 30);
-        // Draw rectangle for signature
-        ctx.strokeStyle = '#999';
-        ctx.strokeRect(30, 170, 300, 50);
-        // Draw barcode-like lines
-        for (let i = 0; i < 10; i++) {
-          ctx.fillRect(50, 60 + i*10, 300 - i*20, 5);
-        }
-      } else {
-        ctx.fillText('SELFIE WITH ID', 150, 30);
-        // Draw face outline
-        ctx.beginPath();
-        ctx.arc(200, 150, 80, 0, Math.PI * 2);
-        ctx.stroke();
-        // Draw ID card outline in hand
-        ctx.strokeRect(100, 200, 200, 80);
-      }
-    }
-    
-    const dataUrl = canvas.toDataURL('image/png');
-    
-    if (currentCaptureType === 'frontId') {
-      setFrontIdImage(dataUrl);
-    } else if (currentCaptureType === 'backId') {
-      setBackIdImage(dataUrl);
-    } else if (currentCaptureType === 'selfie') {
-      setSelfieImage(dataUrl);
-    }
-    
-    toast({
-      title: "Demo Mode",
-      description: "Using placeholder image since camera access is unavailable.",
+    // Submit to our shared data store
+    addKycVerification({
+      userId,
+      name,
+      email,
+      document: documentPreview || '', // In real app, this would be uploaded to secure storage
+      photo: selfiePreview || '', // In real app, this would be uploaded to secure storage
+      status: 'pending',
+      submissionDate: new Date().toISOString()
     });
-  };
-
-  // Simulate extracting data from ID card image
-  const simulateDataExtraction = (imageUrl: string) => {
-    // In a real implementation, this would call an OCR service
-    // For demo purposes, we'll simulate random data that sometimes matches input
     
-    const simulatedData = {
-      fullName: Math.random() > 0.5 ? formData.fullName : formData.fullName.split(' ').reverse().join(' '),
-      dob: Math.random() > 0.5 ? formData.dob : '1990-01-01',
-      idNumber: Math.random() > 0.5 ? formData.idNumber : 'ID' + Math.floor(Math.random() * 1000000).toString()
-    };
+    // Update local status
+    setVerificationStatus('pending');
     
-    setExtractedData(simulatedData);
-    
-    // Check for discrepancies
-    const discrepancies = [];
-    if (simulatedData.fullName !== formData.fullName) {
-      discrepancies.push({
-        field: 'fullName',
-        submittedValue: formData.fullName,
-        extractedValue: simulatedData.fullName
-      });
-    }
-    
-    if (simulatedData.dob !== formData.dob) {
-      discrepancies.push({
-        field: 'dob',
-        submittedValue: formData.dob,
-        extractedValue: simulatedData.dob
-      });
-    }
-    
-    if (simulatedData.idNumber !== formData.idNumber) {
-      discrepancies.push({
-        field: 'idNumber',
-        submittedValue: formData.idNumber,
-        extractedValue: simulatedData.idNumber
-      });
-    }
-    
-    setDataDiscrepancy(discrepancies.length > 0 ? discrepancies : null);
-  };
-
-  const proceedToVerification = () => {
-    if (dataDiscrepancy && dataDiscrepancy.length > 0) {
-      setVerificationStatus('mismatch');
-    } else {
-      setStep(2);
-      setVerificationStatus('processing');
-      
-      // Simulate verification process
-      setTimeout(() => {
-        setVerificationStatus('completed');
-      }, 3000);
-    }
-  };
-
-  const handleDataCorrection = (field: string, value: string) => {
-    setCorrectedData({
-      ...correctedData,
-      [field]: value
-    });
-  };
-
-  const acceptCorrections = () => {
-    setStep(2);
-    setVerificationStatus('processing');
-    
-    // Simulate verification process with corrected data
+    // Simulate API delay
     setTimeout(() => {
-      setVerificationStatus('completed');
-    }, 3000);
+      setIsSubmitting(false);
+      toast({
+        title: "Verification Submitted",
+        description: "Your identity verification request has been submitted and is awaiting review.",
+      });
+    }, 1500);
   };
+
+  // If user has already submitted verification
+  if (verificationStatus !== 'none') {
+    return <KycCompleted status={verificationStatus} />;
+  }
 
   return (
-    <div className="space-y-8">
-      <h2 className="text-2xl font-bold text-center text-shield-dark">Identity Verification</h2>
-      
-      {step === 1 && (
-        <div className="space-y-6">
-          <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
-            <h3 className="text-lg font-medium text-shield-dark mb-2">Document Verification Instructions:</h3>
-            <ul className="list-disc pl-5 space-y-2 text-gray-700">
-              <li>Ensure your ID document is valid and not expired</li>
-              <li>Hold your ID in your hand when taking the photos</li>
-              <li>Make sure all details are clearly visible and not covered by your fingers</li>
-              <li>Avoid glare and shadows on your documents</li>
-              <li>Take the selfie while holding your ID document for additional verification</li>
-            </ul>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Front ID Capture */}
-            <div className="border rounded-lg p-4 flex flex-col items-center">
-              <h3 className="font-medium mb-3">Front of ID</h3>
-              {frontIdImage ? (
-                <div className="relative w-full h-48 bg-gray-100 rounded-md overflow-hidden mb-3">
-                  <img 
-                    src={frontIdImage} 
-                    alt="Front of ID" 
-                    className="w-full h-full object-contain"
-                  />
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="absolute top-2 right-2"
-                    onClick={() => openCamera('frontId')}
-                  >
-                    <RotateCw className="h-4 w-4 mr-1" />
-                    Retake
-                  </Button>
-                </div>
-              ) : (
-                <div 
-                  className="w-full h-48 bg-gray-100 rounded-md flex flex-col items-center justify-center cursor-pointer mb-3"
-                  onClick={() => openCamera('frontId')}
-                >
-                  <Camera className="h-12 w-12 text-gray-400 mb-2" />
-                  <p className="text-sm text-gray-500">Click to capture</p>
-                </div>
-              )}
-              <p className="text-xs text-gray-500 text-center">
-                Hold your ID document and take a photo of the front side
-              </p>
+    <Card className="max-w-lg mx-auto">
+      <CardHeader>
+        <CardTitle>Identity Verification (KYC)</CardTitle>
+        <CardDescription>We need to verify your identity for security purposes</CardDescription>
+      </CardHeader>
+      <CardContent>
+        {step === 1 && (
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Full Name</Label>
+              <Input 
+                id="name" 
+                placeholder="Enter your full name" 
+                value={name} 
+                onChange={(e) => setName(e.target.value)} 
+              />
             </div>
-            
-            {/* Back ID Capture */}
-            <div className="border rounded-lg p-4 flex flex-col items-center">
-              <h3 className="font-medium mb-3">Back of ID</h3>
-              {backIdImage ? (
-                <div className="relative w-full h-48 bg-gray-100 rounded-md overflow-hidden mb-3">
-                  <img 
-                    src={backIdImage} 
-                    alt="Back of ID" 
-                    className="w-full h-full object-contain"
-                  />
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="absolute top-2 right-2"
-                    onClick={() => openCamera('backId')}
-                  >
-                    <RotateCw className="h-4 w-4 mr-1" />
-                    Retake
-                  </Button>
-                </div>
-              ) : (
-                <div 
-                  className="w-full h-48 bg-gray-100 rounded-md flex flex-col items-center justify-center cursor-pointer mb-3"
-                  onClick={() => openCamera('backId')}
-                >
-                  <Camera className="h-12 w-12 text-gray-400 mb-2" />
-                  <p className="text-sm text-gray-500">Click to capture</p>
-                </div>
-              )}
-              <p className="text-xs text-gray-500 text-center">
-                Hold your ID document and take a photo of the back side
-              </p>
-            </div>
-            
-            {/* Selfie with ID Capture */}
-            <div className="border rounded-lg p-4 flex flex-col items-center">
-              <h3 className="font-medium mb-3">Selfie with ID</h3>
-              {selfieImage ? (
-                <div className="relative w-full h-48 bg-gray-100 rounded-md overflow-hidden mb-3">
-                  <img 
-                    src={selfieImage} 
-                    alt="Selfie with ID" 
-                    className="w-full h-full object-contain"
-                  />
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="absolute top-2 right-2"
-                    onClick={() => openCamera('selfie')}
-                  >
-                    <RotateCw className="h-4 w-4 mr-1" />
-                    Retake
-                  </Button>
-                </div>
-              ) : (
-                <div 
-                  className="w-full h-48 bg-gray-100 rounded-md flex flex-col items-center justify-center cursor-pointer mb-3"
-                  onClick={() => openCamera('selfie')}
-                >
-                  <Camera className="h-12 w-12 text-gray-400 mb-2" />
-                  <p className="text-sm text-gray-500">Click to capture</p>
-                </div>
-              )}
-              <p className="text-xs text-gray-500 text-center">
-                Take a selfie while holding your ID document
-              </p>
+            <div className="space-y-2">
+              <Label htmlFor="email">Email Address</Label>
+              <Input 
+                id="email" 
+                type="email" 
+                placeholder="Enter your email address" 
+                value={email} 
+                onChange={(e) => setEmail(e.target.value)} 
+              />
             </div>
           </div>
-          
-          {/* Data Mismatch Section */}
-          {verificationStatus === 'mismatch' && dataDiscrepancy && dataDiscrepancy.length > 0 && (
-            <div className="mt-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-              <div className="flex items-center mb-3">
-                <AlertTriangle className="h-5 w-5 text-yellow-500 mr-2" />
-                <h3 className="font-medium text-yellow-700">Data Mismatch Detected</h3>
-              </div>
+        )}
+        
+        {step === 2 && (
+          <div className="space-y-6">
+            <div className="space-y-2">
+              <Label>Upload Identification Document</Label>
+              <p className="text-sm text-gray-500">Please upload a valid government-issued ID (passport, driver's license, etc.)</p>
               
-              <p className="text-gray-700 mb-4">
-                We found some discrepancies between the information you provided and what we extracted from your ID. 
-                Please review and confirm the correct information:
-              </p>
-              
-              <div className="space-y-4">
-                {dataDiscrepancy.map((item, index) => (
-                  <div key={index} className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-center">
-                    <div className="font-medium">
-                      {item.field === 'fullName' ? 'Full Name' : 
-                       item.field === 'dob' ? 'Date of Birth' : 
-                       item.field === 'idNumber' ? 'ID Number' : item.field}:
-                    </div>
-                    <div className="flex flex-col space-y-1">
-                      <div className="text-sm text-gray-500">You entered:</div>
-                      <div className="font-medium">{item.submittedValue}</div>
-                    </div>
-                    <div className="flex flex-col space-y-1">
-                      <div className="text-sm text-gray-500">From ID:</div>
-                      <input
-                        type="text"
-                        className="border rounded px-3 py-1"
-                        defaultValue={item.extractedValue}
-                        onChange={(e) => handleDataCorrection(item.field, e.target.value)}
+              {documentPreview ? (
+                <div className="mt-2 relative">
+                  <img 
+                    src={documentPreview} 
+                    alt="ID Document Preview" 
+                    className="w-full h-auto rounded-md border"
+                  />
+                  <Button 
+                    variant="destructive" 
+                    size="sm"
+                    className="absolute top-2 right-2"
+                    onClick={() => {
+                      setDocumentFile(null);
+                      setDocumentPreview(null);
+                    }}
+                  >
+                    Remove
+                  </Button>
+                </div>
+              ) : (
+                <div className="mt-2">
+                  <div className="flex items-center justify-center w-full">
+                    <label className="flex flex-col items-center justify-center w-full h-40 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
+                      <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                        <Upload className="w-8 h-8 mb-3 text-gray-500" />
+                        <p className="mb-2 text-sm text-gray-500"><span className="font-semibold">Click to upload</span> or drag and drop</p>
+                        <p className="text-xs text-gray-500">PNG, JPG or PDF (MAX. 5MB)</p>
+                      </div>
+                      <input 
+                        type="file" 
+                        accept="image/*, application/pdf" 
+                        className="hidden" 
+                        onChange={handleDocumentUpload}
                       />
+                    </label>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+        
+        {step === 3 && (
+          <div className="space-y-6">
+            <div className="space-y-2">
+              <Label>Upload Selfie</Label>
+              <p className="text-sm text-gray-500">Please upload a clear photo of your face for verification</p>
+              
+              {selfiePreview ? (
+                <div className="mt-2 relative">
+                  <img 
+                    src={selfiePreview} 
+                    alt="Selfie Preview" 
+                    className="w-40 h-40 object-cover rounded-md border mx-auto"
+                  />
+                  <Button 
+                    variant="destructive" 
+                    size="sm"
+                    className="absolute top-2 right-2"
+                    onClick={() => {
+                      setSelfieFile(null);
+                      setSelfiePreview(null);
+                    }}
+                  >
+                    Remove
+                  </Button>
+                </div>
+              ) : (
+                <div className="mt-2 flex flex-col sm:flex-row items-center gap-4 justify-center">
+                  <div className="w-full sm:w-1/2">
+                    <div className="flex items-center justify-center w-full">
+                      <label className="flex flex-col items-center justify-center w-full h-40 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
+                        <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                          <Upload className="w-8 h-8 mb-2 text-gray-500" />
+                          <p className="text-sm text-gray-500">Upload from device</p>
+                        </div>
+                        <input 
+                          type="file" 
+                          accept="image/*" 
+                          className="hidden"
+                          onChange={handleSelfieUpload}
+                        />
+                      </label>
                     </div>
                   </div>
-                ))}
-              </div>
-              
-              <div className="mt-4 flex justify-end">
-                <Button 
-                  onClick={acceptCorrections}
-                  className="bg-shield-blue text-white"
-                >
-                  Continue with Corrected Data
-                </Button>
-              </div>
+                  
+                  <div className="text-center text-gray-500">OR</div>
+                  
+                  <div className="w-full sm:w-1/2">
+                    <Button 
+                      variant="outline" 
+                      className="flex flex-col items-center justify-center w-full h-40 border-2 border-gray-300 rounded-lg bg-gray-50 hover:bg-gray-100"
+                      onClick={handleTakeSelfie}
+                    >
+                      <Camera className="w-8 h-8 mb-2 text-gray-500" />
+                      <p className="text-sm text-gray-500">Take a selfie</p>
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
-          )}
-          
-          <div className="flex justify-center pt-4">
-            <Button 
-              className="bg-shield-blue text-white w-full md:w-auto"
-              disabled={!frontIdImage || !backIdImage || !selfieImage}
-              onClick={proceedToVerification}
-            >
-              Continue to Verification
-            </Button>
           </div>
-        </div>
-      )}
-      
-      {step === 2 && (
-        <div className="space-y-6">
-          <div className="flex flex-col items-center justify-center py-8">
-            {verificationStatus === 'processing' && (
-              <>
-                <div className="rounded-full bg-blue-50 p-4 mb-4">
-                  <Loader2 className="h-12 w-12 text-shield-blue animate-spin" />
-                </div>
-                <h3 className="text-xl font-medium text-shield-dark">Verifying your identity</h3>
-                <p className="text-gray-500 mt-2 text-center">
-                  Please wait while we verify your identity. This usually takes less than a minute.
-                </p>
-              </>
-            )}
-            
-            {verificationStatus === 'completed' && (
-              <>
-                <div className="rounded-full bg-green-50 p-4 mb-4">
-                  <Shield className="h-12 w-12 text-green-500" />
-                </div>
-                <h3 className="text-xl font-medium text-shield-dark">Verification Successful</h3>
-                <p className="text-gray-500 mt-2 text-center">
-                  Your identity has been successfully verified.
-                </p>
-                <div className="mt-6">
-                  <Button 
-                    className="bg-shield-blue text-white px-8"
-                    onClick={onComplete}
-                  >
-                    <UserCheck className="h-4 w-4 mr-2" />
-                    Complete Verification
-                  </Button>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-      )}
+        )}
+      </CardContent>
+      <CardFooter className="flex justify-between">
+        {step > 1 ? (
+          <Button variant="outline" onClick={handlePrevStep}>
+            Back
+          </Button>
+        ) : (
+          <div></div>
+        )}
+        
+        {step < 3 ? (
+          <Button onClick={handleNextStep}>
+            Next
+          </Button>
+        ) : (
+          <Button onClick={handleSubmit} disabled={isSubmitting}>
+            {isSubmitting ? "Submitting..." : "Submit for Verification"}
+          </Button>
+        )}
+      </CardFooter>
       
       {/* Camera Dialog */}
-      <Dialog open={cameraOpen} onOpenChange={(open) => !open && setCameraOpen(false)}>
-        <DialogContent className="sm:max-w-md">
-          <DialogTitle>
-            {currentCaptureType === 'frontId' && 'Capture Front of ID'}
-            {currentCaptureType === 'backId' && 'Capture Back of ID'}
-            {currentCaptureType === 'selfie' && 'Take Selfie with ID'}
-          </DialogTitle>
-          <DialogDescription>
-            {currentCaptureType === 'selfie' 
-              ? 'Make sure your face and ID document are clearly visible' 
-              : 'Hold the ID in your hand and make sure all details are clearly visible'}
-          </DialogDescription>
-          
-          <div className="relative bg-black rounded-md overflow-hidden aspect-video">
-            {hasCamera ? (
-              <video 
-                ref={videoRef} 
-                autoPlay 
-                playsInline 
-                muted
-                className="w-full h-full object-cover"
-              ></video>
-            ) : (
-              <div className="absolute inset-0 flex flex-col items-center justify-center text-white">
-                <CameraOff className="h-12 w-12 mb-2" />
-                <p className="text-center px-4">{cameraError || "Camera access is unavailable"}</p>
-              </div>
-            )}
-            
-            {/* Guide overlay */}
-            {hasCamera && (
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                {currentCaptureType === 'frontId' && (
-                  <div className="border-2 border-dashed border-white/70 w-4/5 h-3/5 rounded"></div>
-                )}
-                {currentCaptureType === 'backId' && (
-                  <div className="border-2 border-dashed border-white/70 w-4/5 h-3/5 rounded"></div>
-                )}
-                {currentCaptureType === 'selfie' && (
-                  <>
-                    <div className="border-2 border-dashed border-white/70 w-4/5 h-4/5 rounded-full"></div>
-                    <div className="absolute bottom-0 border-2 border-dashed border-white/70 w-3/5 h-1/4 rounded"></div>
-                  </>
-                )}
-              </div>
-            )}
+      <Dialog open={isCameraOpen} onOpenChange={setIsCameraOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Take a Selfie</DialogTitle>
+            <DialogDescription>
+              Position your face within the frame and ensure good lighting
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <div className="bg-gray-200 w-full h-64 rounded-md flex items-center justify-center">
+              <Camera className="h-16 w-16 text-gray-500" />
+            </div>
           </div>
-          
-          <div className="flex justify-center space-x-4">
-            <Button variant="outline" onClick={() => setCameraOpen(false)}>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsCameraOpen(false)}>
               Cancel
             </Button>
-            <Button 
-              onClick={captureImage}
-              disabled={isLoading}
-              className="bg-shield-blue text-white"
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Processing
-                </>
-              ) : (
-                <>
-                  <Camera className="h-4 w-4 mr-2" />
-                  Capture
-                </>
-              )}
+            <Button onClick={handleCaptureSelfie}>
+              Capture
             </Button>
-          </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </Card>
   );
 };
 

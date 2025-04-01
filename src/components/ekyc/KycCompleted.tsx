@@ -1,71 +1,114 @@
 
-import React from 'react';
-import { ShieldCheck, ArrowRight } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Link } from 'react-router-dom';
+import { Check, X, Clock, AlertTriangle } from 'lucide-react';
+import { getUserVerificationStatus, VerificationStatus } from '@/data/kycVerificationsData';
 
-type KycCompletedProps = {
-  onReset: () => void;
-};
+interface KycCompletedProps {
+  status: VerificationStatus;
+  userId?: string;
+}
 
-const KycCompleted = ({ onReset }: KycCompletedProps) => {
+const KycCompleted = ({ status: initialStatus, userId = "user-123" }: KycCompletedProps) => {
+  const [status, setStatus] = useState<VerificationStatus>(initialStatus);
+  
+  // Poll for status updates (in a real app this would use websockets or a real-time database)
+  useEffect(() => {
+    const checkStatus = () => {
+      const currentStatus = getUserVerificationStatus(userId);
+      if (currentStatus !== 'none' && currentStatus !== status) {
+        setStatus(currentStatus);
+      }
+    };
+    
+    // Check immediately and then set interval
+    checkStatus();
+    
+    const interval = setInterval(checkStatus, 5000);
+    return () => clearInterval(interval);
+  }, [userId, status]);
+  
   return (
-    <div className="text-center">
-      <div className="flex justify-center mb-6">
-        <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center">
-          <ShieldCheck className="h-12 w-12 text-green-500" />
-        </div>
-      </div>
-      
-      <h2 className="text-2xl font-semibold mb-4">Verification Successful!</h2>
-      
-      <p className="text-gray-600 mb-8 max-w-lg mx-auto">
-        Your identity has been successfully verified using our secure blockchain technology.
-        You now have full access to all Midshield services.
-      </p>
-      
-      <div className="grid gap-4 grid-cols-1 md:grid-cols-3 mb-10">
-        <div className="bg-blue-50 p-6 rounded-lg">
-          <h3 className="font-medium mb-2">Enhanced Security</h3>
-          <p className="text-sm text-gray-600">
-            Your identity is now securely verified with blockchain technology
-          </p>
-        </div>
+    <Card className="max-w-lg mx-auto">
+      <CardHeader>
+        <CardTitle>Identity Verification Status</CardTitle>
+        <CardDescription>
+          {status === 'pending' 
+            ? 'Your verification is being reviewed by our team'
+            : status === 'approved'
+              ? 'Your identity has been successfully verified'
+              : 'Your identity verification has been rejected'
+          }
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-col items-center py-6">
+        {status === 'pending' && (
+          <div className="text-center">
+            <div className="inline-flex h-24 w-24 items-center justify-center rounded-full bg-yellow-100 mb-4">
+              <Clock className="h-12 w-12 text-yellow-600" />
+            </div>
+            <h3 className="text-xl font-medium mb-2">Verification In Progress</h3>
+            <p className="text-gray-500 mb-4">
+              We're currently reviewing your submitted documents. This typically takes 1-2 business days.
+            </p>
+          </div>
+        )}
         
-        <div className="bg-blue-50 p-6 rounded-lg">
-          <h3 className="font-medium mb-2">Full Access</h3>
-          <p className="text-sm text-gray-600">
-            Enjoy complete access to all Midshield features and services
-          </p>
-        </div>
+        {status === 'approved' && (
+          <div className="text-center">
+            <div className="inline-flex h-24 w-24 items-center justify-center rounded-full bg-green-100 mb-4">
+              <Check className="h-12 w-12 text-green-600" />
+            </div>
+            <h3 className="text-xl font-medium mb-2">Verification Approved</h3>
+            <p className="text-gray-500 mb-4">
+              Your identity has been successfully verified. You now have full access to all features.
+            </p>
+          </div>
+        )}
         
-        <div className="bg-blue-50 p-6 rounded-lg">
-          <h3 className="font-medium mb-2">Regular Updates</h3>
-          <p className="text-sm text-gray-600">
-            Periodic reviews to ensure your information stays current and secure
-          </p>
-        </div>
-      </div>
-      
-      <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
-        <Button 
-          variant="outline" 
-          onClick={onReset}
-          className="border-shield-blue text-shield-blue hover:bg-shield-blue hover:text-white transition-all"
-        >
-          Start a New Verification
-        </Button>
-        
-        <Button 
-          asChild
-          className="bg-shield-blue text-white hover:bg-blue-600 transition-all"
-        >
-          <Link to="/home">
-            Continue to Dashboard <ArrowRight className="ml-2 h-4 w-4" />
-          </Link>
-        </Button>
-      </div>
-    </div>
+        {status === 'rejected' && (
+          <div className="text-center">
+            <div className="inline-flex h-24 w-24 items-center justify-center rounded-full bg-red-100 mb-4">
+              <X className="h-12 w-12 text-red-600" />
+            </div>
+            <h3 className="text-xl font-medium mb-2">Verification Rejected</h3>
+            <p className="text-gray-500 mb-4">
+              Unfortunately, we couldn't verify your identity with the provided documents. Please retry with clearer documents.
+            </p>
+            <div className="bg-amber-50 border border-amber-200 rounded-md p-4 mb-4 flex items-start">
+              <AlertTriangle className="h-5 w-5 text-amber-500 mt-0.5 mr-2 flex-shrink-0" />
+              <div>
+                <h4 className="font-medium text-amber-800 mb-1">Possible reasons for rejection:</h4>
+                <ul className="text-sm text-amber-700 list-disc list-inside space-y-1">
+                  <li>The document image was blurry or unclear</li>
+                  <li>The selfie didn't match the ID photo</li>
+                  <li>The document appears to be expired or invalid</li>
+                  <li>Information on the document was not legible</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        )}
+      </CardContent>
+      <CardFooter className="flex justify-center">
+        {status === 'rejected' && (
+          <Button className="w-full max-w-xs" onClick={() => window.location.reload()}>
+            Try Again
+          </Button>
+        )}
+        {status === 'approved' && (
+          <Button variant="outline" className="w-full max-w-xs" onClick={() => window.location.href = "/"}>
+            Return to Home
+          </Button>
+        )}
+        {status === 'pending' && (
+          <Button variant="outline" className="w-full max-w-xs" onClick={() => window.location.href = "/"}>
+            Return Later
+          </Button>
+        )}
+      </CardFooter>
+    </Card>
   );
 };
 

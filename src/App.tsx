@@ -31,6 +31,8 @@ import AboutUs from "./pages/AboutUs";
 import OfficerLogin from "./pages/OfficerLogin";
 import OfficerRegistration from "./pages/OfficerRegistration";
 import OfficerDashboard from "./pages/OfficerDashboard";
+import OfficerProfile from "./pages/OfficerProfile";
+import OfficerSettings from "./pages/OfficerSettings";
 
 const queryClient = new QueryClient();
 
@@ -67,6 +69,8 @@ const App = () => (
           <Route path="/officer-login" element={<OfficerLogin />} />
           <Route path="/officer-registration" element={<OfficerRegistration />} />
           <Route path="/officer-dashboard" element={<OfficerDashboard />} />
+          <Route path="/officer-profile" element={<OfficerProfile />} />
+          <Route path="/officer-settings" element={<OfficerSettings />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
