@@ -24,12 +24,15 @@ const CriminalListing = () => {
   
   // Load the latest data whenever the component mounts or is focused
   useEffect(() => {
-    setCriminals(getWantedIndividuals());
+    const updateData = () => {
+      setCriminals(getWantedIndividuals());
+    };
+    
+    // Initial load
+    updateData();
     
     // Also set up a refresh interval to check for new data periodically
-    const intervalId = setInterval(() => {
-      setCriminals(getWantedIndividuals());
-    }, 30000); // Check every 30 seconds
+    const intervalId = setInterval(updateData, 5000); // Check every 5 seconds
     
     return () => clearInterval(intervalId);
   }, []);
@@ -101,54 +104,54 @@ const CriminalListing = () => {
                 </DialogTrigger>
                 <DialogContent className="max-w-2xl">
                   <DialogHeader>
-                    <DialogTitle>Case Details: {criminal.name}</DialogTitle>
+                    <DialogTitle>Case Details: {selectedCriminal?.name}</DialogTitle>
                   </DialogHeader>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                       <img
-                        src={criminal.photoUrl}
-                        alt={`Wanted: ${criminal.name}`}
+                        src={selectedCriminal?.photoUrl}
+                        alt={`Wanted: ${selectedCriminal?.name}`}
                         className="w-full h-auto rounded-md"
                       />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-lg mb-2">{criminal.name}</h3>
+                      <h3 className="font-semibold text-lg mb-2">{selectedCriminal?.name}</h3>
                       <div className="space-y-3 text-sm">
                         <div>
                           <span className="font-semibold block">Age:</span>
-                          {criminal.age}
+                          {selectedCriminal?.age}
                         </div>
                         <div>
                           <span className="font-semibold block">Height:</span>
-                          {criminal.height}
+                          {selectedCriminal?.height}
                         </div>
                         <div>
                           <span className="font-semibold block">Weight:</span>
-                          {criminal.weight}
+                          {selectedCriminal?.weight}
                         </div>
                         <div>
                           <span className="font-semibold block">Last Known Location:</span>
-                          {criminal.lastKnownLocation}
+                          {selectedCriminal?.lastKnownLocation}
                         </div>
                         <div>
                           <span className="font-semibold block">Charges:</span>
-                          {criminal.charges}
+                          {selectedCriminal?.charges}
                         </div>
                         <div>
                           <span className="font-semibold block">Case Number:</span>
-                          {criminal.caseNumber}
+                          {selectedCriminal?.caseNumber}
                         </div>
                         <div>
                           <span className="font-semibold block">Risk Level:</span>
-                          <Badge variant={criminal.dangerLevel === 'High' ? 'destructive' : criminal.dangerLevel === 'Medium' ? 'default' : 'outline'}>
-                            {criminal.dangerLevel}
+                          <Badge variant={selectedCriminal?.dangerLevel === 'High' ? 'destructive' : selectedCriminal?.dangerLevel === 'Medium' ? 'default' : 'outline'}>
+                            {selectedCriminal?.dangerLevel}
                           </Badge>
                         </div>
                       </div>
                       <div className="mt-6">
                         <Button 
                           className="w-full bg-blue-600"
-                          onClick={() => handleReportSighting(criminal.id)}
+                          onClick={() => handleReportSighting(selectedCriminal?.id || '')}
                         >
                           Report Sighting
                         </Button>

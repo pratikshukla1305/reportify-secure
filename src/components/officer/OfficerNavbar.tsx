@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { Shield, Menu, X, Bell, LogOut } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Shield, Menu, X, Bell, LogOut, User, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { 
@@ -14,10 +14,13 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { useToast } from '@/components/ui/use-toast';
 
 const OfficerNavbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const navigate = useNavigate();
+  const { toast } = useToast();
   
   // Example officer data - in a real app, this would come from authentication
   const officer = {
@@ -40,6 +43,34 @@ const OfficerNavbar = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  const handleTabNavigation = (tab: string) => {
+    navigate(`/officer-dashboard?tab=${tab}`);
+    setIsMobileMenuOpen(false);
+  };
+
+  const handleLogout = () => {
+    // In a real app, this would handle authentication logout
+    toast({
+      title: "Logged out successfully",
+      description: "You have been logged out of the officer portal",
+    });
+    navigate('/officer-login');
+  };
+
+  const handleViewProfile = () => {
+    toast({
+      title: "Profile",
+      description: "Viewing officer profile (feature in development)",
+    });
+  };
+
+  const handleSettings = () => {
+    toast({
+      title: "Settings",
+      description: "Officer portal settings (feature in development)",
+    });
+  };
+
   return (
     <header className={cn(
       'fixed top-0 left-0 right-0 z-50 transition-all duration-300 ease-in-out',
@@ -57,24 +88,48 @@ const OfficerNavbar = () => {
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-6">
-            <Link to="/officer-dashboard" className="text-sm font-medium text-gray-700 hover:text-shield-blue transition-colors">
+            <Button 
+              variant="ghost" 
+              className="text-sm font-medium text-gray-700 hover:text-shield-blue transition-colors"
+              onClick={() => navigate('/officer-dashboard')}
+            >
               Dashboard
-            </Link>
-            <Link to="/officer-dashboard?tab=sos" className="text-sm font-medium text-gray-700 hover:text-shield-blue transition-colors">
+            </Button>
+            <Button 
+              variant="ghost" 
+              className="text-sm font-medium text-gray-700 hover:text-shield-blue transition-colors"
+              onClick={() => handleTabNavigation('sos')}
+            >
               SOS Alerts
-            </Link>
-            <Link to="/officer-dashboard?tab=kyc" className="text-sm font-medium text-gray-700 hover:text-shield-blue transition-colors">
+            </Button>
+            <Button 
+              variant="ghost" 
+              className="text-sm font-medium text-gray-700 hover:text-shield-blue transition-colors"
+              onClick={() => handleTabNavigation('kyc')}
+            >
               KYC Verification
-            </Link>
-            <Link to="/officer-dashboard?tab=advisories" className="text-sm font-medium text-gray-700 hover:text-shield-blue transition-colors">
+            </Button>
+            <Button 
+              variant="ghost" 
+              className="text-sm font-medium text-gray-700 hover:text-shield-blue transition-colors"
+              onClick={() => handleTabNavigation('advisories')}
+            >
               Advisories
-            </Link>
-            <Link to="/officer-dashboard?tab=criminals" className="text-sm font-medium text-gray-700 hover:text-shield-blue transition-colors">
+            </Button>
+            <Button 
+              variant="ghost" 
+              className="text-sm font-medium text-gray-700 hover:text-shield-blue transition-colors"
+              onClick={() => handleTabNavigation('criminals')}
+            >
               Criminal Profiles
-            </Link>
-            <Link to="/officer-dashboard?tab=cases" className="text-sm font-medium text-gray-700 hover:text-shield-blue transition-colors">
+            </Button>
+            <Button 
+              variant="ghost" 
+              className="text-sm font-medium text-gray-700 hover:text-shield-blue transition-colors"
+              onClick={() => handleTabNavigation('cases')}
+            >
               Case Mapping
-            </Link>
+            </Button>
             
             {/* Notification bell */}
             <DropdownMenu>
@@ -133,14 +188,16 @@ const OfficerNavbar = () => {
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>
-                  My Profile
+                <DropdownMenuItem onClick={handleViewProfile}>
+                  <User className="mr-2 h-4 w-4" />
+                  <span>My Profile</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem>
-                  Settings
+                <DropdownMenuItem onClick={handleSettings}>
+                  <Settings className="mr-2 h-4 w-4" />
+                  <span>Settings</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem className="text-red-600">
+                <DropdownMenuItem onClick={handleLogout} className="text-red-600">
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Log out</span>
                 </DropdownMenuItem>
@@ -151,17 +208,35 @@ const OfficerNavbar = () => {
           {/* Mobile Menu Button */}
           <div className="md:hidden flex items-center space-x-3">
             {/* Notification bell - mobile */}
-            <Button variant="ghost" size="icon" className="relative">
-              <Bell className="h-5 w-5" />
-              {officer.notifications > 0 && (
-                <Badge 
-                  className="absolute -top-1 -right-1 px-1.5 py-0.5 min-w-[20px] min-h-[20px] flex items-center justify-center text-xs" 
-                  variant="destructive"
-                >
-                  {officer.notifications}
-                </Badge>
-              )}
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="relative">
+                  <Bell className="h-5 w-5" />
+                  {officer.notifications > 0 && (
+                    <Badge 
+                      className="absolute -top-1 -right-1 px-1.5 py-0.5 min-w-[20px] min-h-[20px] flex items-center justify-center text-xs" 
+                      variant="destructive"
+                    >
+                      {officer.notifications}
+                    </Badge>
+                  )}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-80">
+                <DropdownMenuLabel>Notifications</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <div className="max-h-60 overflow-y-auto">
+                  <DropdownMenuItem className="flex flex-col items-start cursor-pointer">
+                    <div className="font-medium">New SOS Alert</div>
+                    <div className="text-xs text-gray-500">Downtown Central Square, 5 minutes ago</div>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem className="flex flex-col items-start cursor-pointer">
+                    <div className="font-medium">KYC Verification Pending</div>
+                    <div className="text-xs text-gray-500">5 new users waiting for verification</div>
+                  </DropdownMenuItem>
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
             
             <button
               className="text-gray-700"
@@ -192,58 +267,58 @@ const OfficerNavbar = () => {
               </div>
             </div>
 
-            <Link 
-              to="/officer-dashboard" 
-              className="block text-base font-medium text-gray-700 hover:text-shield-blue transition-colors"
-              onClick={() => setIsMobileMenuOpen(false)}
+            <Button 
+              variant="ghost" 
+              className="block w-full justify-start text-base font-medium text-gray-700 hover:text-shield-blue transition-colors"
+              onClick={() => navigate('/officer-dashboard')}
             >
               Dashboard
-            </Link>
-            <Link 
-              to="/officer-dashboard?tab=sos" 
-              className="block text-base font-medium text-gray-700 hover:text-shield-blue transition-colors"
-              onClick={() => setIsMobileMenuOpen(false)}
+            </Button>
+            <Button 
+              variant="ghost" 
+              className="block w-full justify-start text-base font-medium text-gray-700 hover:text-shield-blue transition-colors"
+              onClick={() => handleTabNavigation('sos')}
             >
               SOS Alerts
-            </Link>
-            <Link 
-              to="/officer-dashboard?tab=kyc" 
-              className="block text-base font-medium text-gray-700 hover:text-shield-blue transition-colors"
-              onClick={() => setIsMobileMenuOpen(false)}
+            </Button>
+            <Button 
+              variant="ghost" 
+              className="block w-full justify-start text-base font-medium text-gray-700 hover:text-shield-blue transition-colors"
+              onClick={() => handleTabNavigation('kyc')}
             >
               KYC Verification
-            </Link>
-            <Link 
-              to="/officer-dashboard?tab=advisories" 
-              className="block text-base font-medium text-gray-700 hover:text-shield-blue transition-colors"
-              onClick={() => setIsMobileMenuOpen(false)}
+            </Button>
+            <Button 
+              variant="ghost" 
+              className="block w-full justify-start text-base font-medium text-gray-700 hover:text-shield-blue transition-colors"
+              onClick={() => handleTabNavigation('advisories')}
             >
               Advisories
-            </Link>
-            <Link 
-              to="/officer-dashboard?tab=criminals" 
-              className="block text-base font-medium text-gray-700 hover:text-shield-blue transition-colors"
-              onClick={() => setIsMobileMenuOpen(false)}
+            </Button>
+            <Button 
+              variant="ghost" 
+              className="block w-full justify-start text-base font-medium text-gray-700 hover:text-shield-blue transition-colors"
+              onClick={() => handleTabNavigation('criminals')}
             >
               Criminal Profiles
-            </Link>
-            <Link 
-              to="/officer-dashboard?tab=cases" 
-              className="block text-base font-medium text-gray-700 hover:text-shield-blue transition-colors"
-              onClick={() => setIsMobileMenuOpen(false)}
+            </Button>
+            <Button 
+              variant="ghost" 
+              className="block w-full justify-start text-base font-medium text-gray-700 hover:text-shield-blue transition-colors"
+              onClick={() => handleTabNavigation('cases')}
             >
               Case Mapping
-            </Link>
+            </Button>
             
             <div className="border-t border-gray-100 pt-4">
-              <Link 
-                to="/signin"
+              <Button 
+                variant="ghost"
                 className="flex items-center text-red-600 font-medium"
-                onClick={() => setIsMobileMenuOpen(false)}
+                onClick={handleLogout}
               >
                 <LogOut className="h-4 w-4 mr-2" />
                 Log out
-              </Link>
+              </Button>
             </div>
           </div>
         </div>

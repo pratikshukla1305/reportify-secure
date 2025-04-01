@@ -108,5 +108,22 @@ export const updateWantedIndividuals = (newData: WantedIndividual[]): void => {
   wantedIndividualsData = [...newData];
 };
 
+// Function to add a new wanted individual
+export const addWantedIndividual = (individual: WantedIndividual): void => {
+  wantedIndividualsData = [...wantedIndividualsData, individual];
+};
+
+// Function to update an existing wanted individual
+export const updateWantedIndividual = (individual: WantedIndividual): void => {
+  wantedIndividualsData = wantedIndividualsData.map(item => 
+    item.id === individual.id ? individual : item
+  );
+};
+
+// Function to delete a wanted individual
+export const deleteWantedIndividual = (id: string): void => {
+  wantedIndividualsData = wantedIndividualsData.filter(individual => individual.id !== id);
+};
+
 // Export the current data for backward compatibility
 export const wantedIndividuals = getWantedIndividuals();
