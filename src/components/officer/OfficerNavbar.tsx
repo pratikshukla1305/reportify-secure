@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Shield, Menu, X, Bell, LogOut, User, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -20,6 +20,7 @@ const OfficerNavbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
   
   // Example officer data - in a real app, this would come from authentication
@@ -43,8 +44,16 @@ const OfficerNavbar = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // Fixed navigation function to handle tab changes
   const handleTabNavigation = (tab: string) => {
+    // Navigate to the officer-dashboard with the specified tab as a query parameter
     navigate(`/officer-dashboard?tab=${tab}`);
+    setIsMobileMenuOpen(false);
+  };
+
+  // Function to handle navigation to the dashboard home view
+  const navigateToDashboard = () => {
+    navigate('/officer-dashboard');
     setIsMobileMenuOpen(false);
   };
 
@@ -91,7 +100,7 @@ const OfficerNavbar = () => {
             <Button 
               variant="ghost" 
               className="text-sm font-medium text-gray-700 hover:text-shield-blue transition-colors"
-              onClick={() => navigate('/officer-dashboard')}
+              onClick={navigateToDashboard}
             >
               Dashboard
             </Button>
@@ -270,7 +279,7 @@ const OfficerNavbar = () => {
             <Button 
               variant="ghost" 
               className="block w-full justify-start text-base font-medium text-gray-700 hover:text-shield-blue transition-colors"
-              onClick={() => navigate('/officer-dashboard')}
+              onClick={navigateToDashboard}
             >
               Dashboard
             </Button>

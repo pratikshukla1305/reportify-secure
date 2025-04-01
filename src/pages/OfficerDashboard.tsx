@@ -1,10 +1,10 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Bell, Users, FileText, MapPin, AlertTriangle, Megaphone } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import OfficerNavbar from '@/components/officer/OfficerNavbar';
 import SOSAlertsList from '@/components/officer/SOSAlertsList';
 import KycVerificationList from '@/components/officer/KycVerificationList';
@@ -15,6 +15,7 @@ import OfficerCaseMap from '@/components/officer/OfficerCaseMap';
 const OfficerDashboard = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const navigate = useNavigate();
+  const location = useLocation();
 
   // Simulate new notifications for demonstration
   const notifications = {
@@ -22,6 +23,24 @@ const OfficerDashboard = () => {
     kyc: 5,
     tips: 2,
     reports: 8,
+  };
+  
+  // Get the tab from URL query parameter
+  useEffect(() => {
+    const queryParams = new URLSearchParams(location.search);
+    const tabParam = queryParams.get('tab');
+    
+    if (tabParam) {
+      setActiveTab(tabParam);
+    } else {
+      setActiveTab('dashboard');
+    }
+  }, [location.search]);
+
+  // Update the URL when the active tab changes
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    navigate(`/officer-dashboard${value !== 'dashboard' ? `?tab=${value}` : ''}`);
   };
 
   return (
@@ -53,7 +72,7 @@ const OfficerDashboard = () => {
             <CardFooter className="pt-0">
               <button 
                 className="text-sm text-blue-600 hover:underline"
-                onClick={() => setActiveTab('sos')}
+                onClick={() => handleTabChange('sos')}
               >
                 View alerts
               </button>
@@ -80,7 +99,7 @@ const OfficerDashboard = () => {
             <CardFooter className="pt-0">
               <button 
                 className="text-sm text-blue-600 hover:underline"
-                onClick={() => setActiveTab('kyc')}
+                onClick={() => handleTabChange('kyc')}
               >
                 Verify identities
               </button>
@@ -107,7 +126,7 @@ const OfficerDashboard = () => {
             <CardFooter className="pt-0">
               <button 
                 className="text-sm text-blue-600 hover:underline"
-                onClick={() => setActiveTab('criminals')}
+                onClick={() => handleTabChange('criminals')}
               >
                 View tips
               </button>
@@ -134,7 +153,7 @@ const OfficerDashboard = () => {
             <CardFooter className="pt-0">
               <button 
                 className="text-sm text-blue-600 hover:underline"
-                onClick={() => setActiveTab('cases')}
+                onClick={() => handleTabChange('cases')}
               >
                 View reports
               </button>
@@ -143,7 +162,7 @@ const OfficerDashboard = () => {
         </div>
         
         {/* Main Tabs Interface */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
           <TabsList className="grid grid-cols-6 mb-8">
             <TabsTrigger value="dashboard" className="data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700">
               Dashboard
@@ -179,7 +198,7 @@ const OfficerDashboard = () => {
                 <CardFooter>
                   <button 
                     className="text-sm text-blue-600 hover:underline"
-                    onClick={() => setActiveTab('sos')}
+                    onClick={() => handleTabChange('sos')}
                   >
                     View all alerts
                   </button>
@@ -197,7 +216,7 @@ const OfficerDashboard = () => {
                 <CardFooter>
                   <button 
                     className="text-sm text-blue-600 hover:underline"
-                    onClick={() => setActiveTab('kyc')}
+                    onClick={() => handleTabChange('kyc')}
                   >
                     View all verifications
                   </button>
