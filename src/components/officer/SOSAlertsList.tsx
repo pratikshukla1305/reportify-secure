@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { 
   Card, 
@@ -18,10 +19,12 @@ import {
   Loader2, 
   MessageSquare,
   User,
-  ArrowUpRight
+  ArrowUpRight,
+  Volume2
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { toast } from '@/hooks/use-toast';
+import MapComponent from '@/components/maps/MapComponent';
 
 // Mock data for SOS alerts
 const mockSOSAlerts = [
@@ -107,9 +110,12 @@ interface SOSAlertsListProps {
 }
 
 const SOSAlertsList = ({ limit }: SOSAlertsListProps) => {
+  const [alerts, setAlerts] = useState(mockSOSAlerts);
   const [selectedAlert, setSelectedAlert] = useState<any | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [currentTab, setCurrentTab] = useState('all');
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [showMap, setShowMap] = useState(false);
   
   const formatTime = (date: Date) => {
     const now = new Date();
@@ -153,13 +159,60 @@ const SOSAlertsList = ({ limit }: SOSAlertsListProps) => {
   };
   
   const handleUpdateStatus = (alertId: string, newStatus: string) => {
-    // In a real app, this would make an API call to update the status
+    // Update the status in our state
+    const updatedAlerts = alerts.map(alert => 
+      alert.id === alertId ? { ...alert, status: newStatus } : alert
+    );
+    setAlerts(updatedAlerts);
+    
+    // Update the selected alert status
+    if (selectedAlert && selectedAlert.id === alertId) {
+      setSelectedAlert({...selectedAlert, status: newStatus});
+    }
+    
     toast({
       title: "Status updated",
       description: `Alert ${alertId} marked as ${newStatus}`,
     });
     
-    setDetailsOpen(false);
+    // If marking as resolved, close the dialog after a short delay
+    if (newStatus === 'resolved') {
+      setTimeout(() => {
+        setDetailsOpen(false);
+      }, 1500);
+    }
+  };
+  
+  const handlePlayRecording = () => {
+    setIsPlaying(!isPlaying);
+    
+    if (!isPlaying) {
+      toast({
+        title: "Playing recording",
+        description: "Voice recording is now playing.",
+      });
+      
+      // Simulate ending of playback after 5 seconds
+      setTimeout(() => {
+        setIsPlaying(false);
+      }, 5000);
+    }
+  };
+  
+  const handleDispatchTeam = () => {
+    toast({
+      title: "Team dispatched",
+      description: "A response team has been dispatched to the location.",
+      variant: "default",
+    });
+  };
+  
+  const handleContactUser = () => {
+    toast({
+      title: "Contacting user",
+      description: "Connecting you with the user...",
+      variant: "default",
+    });
   };
 
   return (
@@ -245,7 +298,7 @@ const SOSAlertsList = ({ limit }: SOSAlertsListProps) => {
       {/* Alert Details Dialog */}
       <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
         {selectedAlert && (
-          <DialogContent className="sm:max-w-2xl">
+          <DialogContent className="sm:max-w-2xl overflow-y-auto max-h-[90vh]">
             <DialogHeader>
               <DialogTitle className="flex items-center">
                 <AlertTriangle className="h-4 w-4 text-red-500 mr-2" />
@@ -302,10 +355,21 @@ const SOSAlertsList = ({ limit }: SOSAlertsListProps) => {
                   variant="outline" 
                   size="sm" 
                   className="mt-2"
+                  onClick={() => setShowMap(!showMap)}
                 >
                   <MapPin className="h-3.5 w-3.5 mr-1" />
-                  View on Map
+                  {showMap ? "Hide Map" : "View on Map"}
                 </Button>
+                
+                {showMap && (
+                  <div className="mt-2 h-64 w-full rounded-md overflow-hidden border border-gray-200">
+                    <MapComponent 
+                      userLocation={{ lat: selectedAlert.location.lat, lng: selectedAlert.location.lng }}
+                      policeStations={[]}
+                      zoom={14}
+                    />
+                  </div>
+                )}
               </div>
               
               <div>
@@ -319,16 +383,40 @@ const SOSAlertsList = ({ limit }: SOSAlertsListProps) => {
                 <div>
                   <div className="text-sm font-medium mb-1">Voice Recording</div>
                   <div className="bg-gray-50 rounded-md p-2">
-                    <audio controls className="w-full">
-                      <source src="/mocked-audio-file.mp3" type="audio/mpeg" />
-                      Your browser does not support the audio element.
-                    </audio>
+                    {isPlaying ? (
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1 mx-3">
+                          <div className="h-2 bg-blue-500 rounded-full relative">
+                            <div className="absolute -top-1 left-1/2 w-4 h-4 bg-blue-700 rounded-full"></div>
+                          </div>
+                        </div>
+                        <Button 
+                          size="sm" 
+                          variant="ghost" 
+                          onClick={handlePlayRecording}
+                          className="ml-2"
+                        >
+                          <span className="sr-only">Pause</span>
+                          <span className="h-4 w-4">⏸️</span>
+                        </Button>
+                      </div>
+                    ) : (
+                      <Button 
+                        onClick={handlePlayRecording} 
+                        variant="outline" 
+                        size="sm" 
+                        className="w-full"
+                      >
+                        <Volume2 className="h-4 w-4 mr-1" />
+                        Play Recording
+                      </Button>
+                    )}
                   </div>
                 </div>
               )}
             </div>
             
-            <DialogFooter className="flex flex-col sm:flex-row gap-2">
+            <DialogFooter className="flex flex-col sm:flex-row gap-2 mt-4">
               {selectedAlert.status === 'new' && (
                 <Button 
                   onClick={() => handleUpdateStatus(selectedAlert.id, 'in-progress')}
@@ -352,6 +440,7 @@ const SOSAlertsList = ({ limit }: SOSAlertsListProps) => {
               <Button 
                 variant="outline"
                 className="w-full sm:w-auto"
+                onClick={handleDispatchTeam}
               >
                 <ArrowUpRight className="h-4 w-4 mr-2" />
                 Dispatch Team
@@ -360,6 +449,7 @@ const SOSAlertsList = ({ limit }: SOSAlertsListProps) => {
               <Button 
                 variant="outline" 
                 className="w-full sm:w-auto"
+                onClick={handleContactUser}
               >
                 <MessageSquare className="h-4 w-4 mr-2" />
                 Contact User
