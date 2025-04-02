@@ -1,14 +1,15 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Check, Upload, Shield, X, Eye } from 'lucide-react';
+import { Check, Upload, Shield, X, Eye, Camera, Edit, AlertCircle } from 'lucide-react';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/use-toast';
 import { addKycVerification, getKycVerificationByUserId } from '@/data/kycVerificationsData';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 
 export interface KycVerificationProps {
   userId: string;
@@ -34,6 +35,14 @@ const KycVerification = ({ userId, onComplete, formData }: KycVerificationProps)
   const [isComplete, setIsComplete] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [previewType, setPreviewType] = useState<"idFront" | "idBack" | "selfie" | null>(null);
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const [captureType, setCaptureType] = useState<"idFront" | "idBack" | "selfie" | null>(null);
+  const [extractedData, setExtractedData] = useState<{idNumber?: string}>({});
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editedIdNumber, setEditedIdNumber] = useState("");
+  
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
     // Check if verification already exists
@@ -42,6 +51,30 @@ const KycVerification = ({ userId, onComplete, formData }: KycVerificationProps)
       setIsComplete(true);
     }
   }, [userId]);
+
+  useEffect(() => {
+    // If ID front is set and we have formData, simulate OCR extraction
+    if (idFront && formData) {
+      // Simulate OCR extraction delay
+      setTimeout(() => {
+        // Mock extraction - in a real app, this would use OCR
+        const extractedIdNumber = formData.idNumber;
+        setExtractedData({ idNumber: extractedIdNumber });
+        
+        // Show toast notification about extracted data
+        toast({
+          title: "ID Number Extracted",
+          description: `ID Number (${extractedIdNumber}) has been extracted from your document.`,
+        });
+        
+        // If extracted ID is different from form data, show edit dialog
+        if (extractedIdNumber !== formData.idNumber) {
+          setEditedIdNumber(extractedIdNumber);
+          setIsEditDialogOpen(true);
+        }
+      }, 1500);
+    }
+  }, [idFront, formData]);
 
   const handleIdFrontChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -64,6 +97,86 @@ const KycVerification = ({ userId, onComplete, formData }: KycVerificationProps)
   const handlePreview = (type: "idFront" | "idBack" | "selfie") => {
     setPreviewType(type);
     setIsPreviewOpen(true);
+  };
+
+  const handleCameraOpen = (type: "idFront" | "idBack" | "selfie") => {
+    setCaptureType(type);
+    setIsCameraOpen(true);
+    
+    // Start camera when dialog opens
+    setTimeout(() => {
+      startCamera();
+    }, 100);
+  };
+
+  const startCamera = async () => {
+    try {
+      if (videoRef.current) {
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+          video: { facingMode: captureType === "selfie" ? "user" : "environment" } 
+        });
+        videoRef.current.srcObject = stream;
+      }
+    } catch (err) {
+      toast({
+        title: "Camera Error",
+        description: "Unable to access camera. Please check permissions.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const stopCamera = () => {
+    if (videoRef.current && videoRef.current.srcObject) {
+      const stream = videoRef.current.srcObject as MediaStream;
+      const tracks = stream.getTracks();
+      tracks.forEach(track => track.stop());
+      videoRef.current.srcObject = null;
+    }
+  };
+
+  const capturePhoto = () => {
+    if (videoRef.current && canvasRef.current) {
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      
+      // Set canvas dimensions to match video
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      
+      // Draw video frame to canvas
+      const context = canvas.getContext('2d');
+      if (context) {
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        
+        // Convert canvas to blob
+        canvas.toBlob((blob) => {
+          if (blob) {
+            // Create File object from blob
+            const file = new File([blob], `${captureType}-${Date.now()}.jpg`, { type: 'image/jpeg' });
+            
+            // Set the appropriate file based on capture type
+            if (captureType === 'idFront') setIdFront(file);
+            else if (captureType === 'idBack') setIdBack(file);
+            else if (captureType === 'selfie') setSelfie(file);
+            
+            toast({
+              title: "Photo Captured",
+              description: `${captureType === 'idFront' ? 'ID Front' : captureType === 'idBack' ? 'ID Back' : 'Selfie'} captured successfully.`
+            });
+          }
+        }, 'image/jpeg', 0.95);
+      }
+      
+      // Close camera after capture
+      setIsCameraOpen(false);
+      stopCamera();
+    }
+  };
+
+  const handleCameraClose = () => {
+    setIsCameraOpen(false);
+    stopCamera();
   };
 
   const handleSubmit = () => {
@@ -102,6 +215,18 @@ const KycVerification = ({ userId, onComplete, formData }: KycVerificationProps)
       }
     }, 2000);
   };
+
+  const handleEditIdNumber = () => {
+    // Update formData with corrected ID number
+    if (formData) {
+      // In a real app, you would update the formData here
+      toast({
+        title: "ID Number Updated",
+        description: `ID Number has been corrected to: ${editedIdNumber}`
+      });
+    }
+    setIsEditDialogOpen(false);
+  };
   
   return (
     <Card className="max-w-lg mx-auto">
@@ -120,28 +245,39 @@ const KycVerification = ({ userId, onComplete, formData }: KycVerificationProps)
             
             <TabsContent value="id" className="mt-4">
               <div className="grid gap-4">
-                <Label htmlFor="id-front">Upload Front of ID</Label>
-                <input
-                  type="file"
-                  id="id-front"
-                  className="hidden"
-                  onChange={handleIdFrontChange}
-                />
-                <Button asChild variant="outline">
-                  <Label htmlFor="id-front" className="cursor-pointer">
-                    {idFront ? (
-                      <>
-                        <Check className="mr-2 h-4 w-4" />
-                        {idFront.name}
-                      </>
-                    ) : (
-                      <>
-                        <Upload className="mr-2 h-4 w-4" />
-                        Upload ID Front
-                      </>
-                    )}
-                  </Label>
-                </Button>
+                <Label htmlFor="id-front">Upload or Capture Front of ID</Label>
+                <div className="flex gap-2">
+                  <input
+                    type="file"
+                    id="id-front"
+                    className="hidden"
+                    accept="image/*"
+                    onChange={handleIdFrontChange}
+                  />
+                  <Button asChild variant="outline" className="flex-1">
+                    <Label htmlFor="id-front" className="cursor-pointer">
+                      {idFront ? (
+                        <>
+                          <Check className="mr-2 h-4 w-4" />
+                          {idFront.name}
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="mr-2 h-4 w-4" />
+                          Upload ID Front
+                        </>
+                      )}
+                    </Label>
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => handleCameraOpen("idFront")}
+                    className="flex-1"
+                  >
+                    <Camera className="mr-2 h-4 w-4" />
+                    Capture ID Front
+                  </Button>
+                </div>
                 {idFront && (
                   <div className="relative">
                     <img
@@ -159,33 +295,70 @@ const KycVerification = ({ userId, onComplete, formData }: KycVerificationProps)
                     </Button>
                   </div>
                 )}
+                
+                {/* Extracted data section */}
+                {extractedData.idNumber && (
+                  <div className="mt-4 p-4 bg-blue-50 rounded-md">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h4 className="font-medium flex items-center">
+                          <Check className="h-4 w-4 mr-2 text-green-500" />
+                          Extracted Information
+                        </h4>
+                        <p className="text-sm mt-1">ID Number: {extractedData.idNumber}</p>
+                      </div>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => {
+                          setEditedIdNumber(extractedData.idNumber || "");
+                          setIsEditDialogOpen(true);
+                        }}
+                      >
+                        <Edit className="h-4 w-4 mr-1" />
+                        Edit
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
             </TabsContent>
             
             <TabsContent value="idBack" className="mt-4">
               <div className="grid gap-4">
-                <Label htmlFor="id-back">Upload Back of ID</Label>
-                <input
-                  type="file"
-                  id="id-back"
-                  className="hidden"
-                  onChange={handleIdBackChange}
-                />
-                <Button asChild variant="outline">
-                  <Label htmlFor="id-back" className="cursor-pointer">
-                    {idBack ? (
-                      <>
-                        <Check className="mr-2 h-4 w-4" />
-                        {idBack.name}
-                      </>
-                    ) : (
-                      <>
-                        <Upload className="mr-2 h-4 w-4" />
-                        Upload ID Back
-                      </>
-                    )}
-                  </Label>
-                </Button>
+                <Label htmlFor="id-back">Upload or Capture Back of ID</Label>
+                <div className="flex gap-2">
+                  <input
+                    type="file"
+                    id="id-back"
+                    className="hidden"
+                    accept="image/*"
+                    onChange={handleIdBackChange}
+                  />
+                  <Button asChild variant="outline" className="flex-1">
+                    <Label htmlFor="id-back" className="cursor-pointer">
+                      {idBack ? (
+                        <>
+                          <Check className="mr-2 h-4 w-4" />
+                          {idBack.name}
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="mr-2 h-4 w-4" />
+                          Upload ID Back
+                        </>
+                      )}
+                    </Label>
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => handleCameraOpen("idBack")}
+                    className="flex-1"
+                  >
+                    <Camera className="mr-2 h-4 w-4" />
+                    Capture ID Back
+                  </Button>
+                </div>
                 {idBack && (
                   <div className="relative">
                     <img
@@ -208,28 +381,39 @@ const KycVerification = ({ userId, onComplete, formData }: KycVerificationProps)
             
             <TabsContent value="selfie" className="mt-4">
               <div className="grid gap-4">
-                <Label htmlFor="selfie">Upload Selfie</Label>
-                <input
-                  type="file"
-                  id="selfie"
-                  className="hidden"
-                  onChange={handleSelfieChange}
-                />
-                <Button asChild variant="outline">
-                  <Label htmlFor="selfie" className="cursor-pointer">
-                    {selfie ? (
-                      <>
-                        <Check className="mr-2 h-4 w-4" />
-                        {selfie.name}
-                      </>
-                    ) : (
-                      <>
-                        <Upload className="mr-2 h-4 w-4" />
-                        Upload Selfie
-                      </>
-                    )}
-                  </Label>
-                </Button>
+                <Label htmlFor="selfie">Upload or Capture Selfie</Label>
+                <div className="flex gap-2">
+                  <input
+                    type="file"
+                    id="selfie"
+                    className="hidden"
+                    accept="image/*"
+                    onChange={handleSelfieChange}
+                  />
+                  <Button asChild variant="outline" className="flex-1">
+                    <Label htmlFor="selfie" className="cursor-pointer">
+                      {selfie ? (
+                        <>
+                          <Check className="mr-2 h-4 w-4" />
+                          {selfie.name}
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="mr-2 h-4 w-4" />
+                          Upload Selfie
+                        </>
+                      )}
+                    </Label>
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => handleCameraOpen("selfie")}
+                    className="flex-1"
+                  >
+                    <Camera className="mr-2 h-4 w-4" />
+                    Capture Selfie
+                  </Button>
+                </div>
                 {selfie && (
                   <div className="relative">
                     <img
@@ -319,6 +503,56 @@ const KycVerification = ({ userId, onComplete, formData }: KycVerificationProps)
         )}
       </CardFooter>
 
+      {/* Camera Sheet for capturing photos */}
+      <Sheet open={isCameraOpen} onOpenChange={(open) => {
+        if (!open) handleCameraClose();
+      }}>
+        <SheetContent className="w-full sm:max-w-full flex flex-col">
+          <SheetHeader>
+            <SheetTitle>
+              Capture {captureType === "idFront" ? "ID Front" : 
+                     captureType === "idBack" ? "ID Back" : "Selfie"}
+            </SheetTitle>
+            <SheetDescription>
+              Position your {captureType === "selfie" ? "face" : "document"} within the frame and take a photo
+            </SheetDescription>
+          </SheetHeader>
+          
+          <div className="flex-grow flex flex-col items-center justify-center my-6 relative">
+            <video 
+              ref={videoRef} 
+              autoPlay 
+              playsInline
+              className="w-full max-h-[60vh] object-cover rounded-lg bg-black"
+            />
+            
+            {/* Overlay guide for document positioning */}
+            {captureType !== "selfie" && (
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div className="border-2 border-dashed border-white w-4/5 h-3/5 rounded-md opacity-70"></div>
+              </div>
+            )}
+            
+            <canvas ref={canvasRef} className="hidden" />
+          </div>
+          
+          <div className="flex justify-center space-x-4">
+            <Button 
+              variant="outline" 
+              onClick={handleCameraClose}
+            >
+              Cancel
+            </Button>
+            <Button 
+              variant="default"
+              onClick={capturePhoto}
+            >
+              Capture
+            </Button>
+          </div>
+        </SheetContent>
+      </Sheet>
+
       {/* Fullscreen preview sheet */}
       <Sheet open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
         <SheetContent className="w-full sm:max-w-full">
@@ -356,6 +590,39 @@ const KycVerification = ({ userId, onComplete, formData }: KycVerificationProps)
           </div>
         </SheetContent>
       </Sheet>
+
+      {/* Edit extracted data dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Extracted ID Number</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <div className="flex items-center space-x-2 mb-4">
+              <AlertCircle className="h-5 w-5 text-yellow-500" />
+              <p className="text-sm text-muted-foreground">
+                Please verify the extracted ID number and make corrections if needed.
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="idNumber">ID Number</Label>
+              <Input
+                id="idNumber"
+                value={editedIdNumber}
+                onChange={(e) => setEditedIdNumber(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleEditIdNumber}>
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
