@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { useState } from "react";
 import Index from "./pages/Index";
 import Home from "./pages/Home";
 import FeaturesPage from "./pages/Features";
@@ -34,49 +35,52 @@ import OfficerDashboard from "./pages/OfficerDashboard";
 import OfficerProfile from "./pages/OfficerProfile";
 import OfficerSettings from "./pages/OfficerSettings";
 
-const queryClient = new QueryClient();
+const App = () => {
+  // Create a new QueryClient instance inside the component function
+  const [queryClient] = useState(() => new QueryClient());
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/home" element={<Home />} />
-          <Route path="/features" element={<FeaturesPage />} />
-          <Route path="/how-it-works" element={<HowItWorks />} />
-          <Route path="/signin" element={<SignIn />} />
-          <Route path="/get-started" element={<GetStarted />} />
-          <Route path="/learn-more" element={<LearnMore />} />
-          <Route path="/about-us" element={<AboutUs />} />
-          <Route path="/continue-report" element={<ContinueReport />} />
-          <Route path="/cancel-report" element={<CancelReport />} />
-          <Route path="/view-draft-report" element={<ViewDraftReport />} />
-          <Route path="/generate-detailed-report" element={<GenerateDetailedReport />} />
-          <Route path="/connect-wallet" element={<ConnectWallet />} />
-          <Route path="/learn-about-rewards" element={<LearnAboutRewards />} />
-          <Route path="/view-all-rewards" element={<ViewAllRewards />} />
-          <Route path="/request-demo" element={<RequestDemo />} />
-          <Route path="/e-kyc" element={<EKycPage />} />
-          <Route path="/police-stations" element={<PoliceStationsMap />} />
-          <Route path="/case-heatmap" element={<CaseHeatmap />} />
-          <Route path="/police-station/:id" element={<PoliceStationDetail />} />
-          <Route path="/help-us" element={<HelpUsPage />} />
-          <Route path="/submit-tip" element={<SubmitTipPage />} />
-          <Route path="/advisory" element={<AdvisoryPage />} />
-          <Route path="/officer-login" element={<OfficerLogin />} />
-          <Route path="/officer-registration" element={<OfficerRegistration />} />
-          <Route path="/officer-dashboard" element={<OfficerDashboard />} />
-          <Route path="/officer-profile" element={<OfficerProfile />} />
-          <Route path="/officer-settings" element={<OfficerSettings />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/home" element={<Home />} />
+            <Route path="/features" element={<FeaturesPage />} />
+            <Route path="/how-it-works" element={<HowItWorks />} />
+            <Route path="/signin" element={<SignIn />} />
+            <Route path="/get-started" element={<GetStarted />} />
+            <Route path="/learn-more" element={<LearnMore />} />
+            <Route path="/about-us" element={<AboutUs />} />
+            <Route path="/continue-report" element={<ContinueReport />} />
+            <Route path="/cancel-report" element={<CancelReport />} />
+            <Route path="/view-draft-report" element={<ViewDraftReport />} />
+            <Route path="/generate-detailed-report" element={<GenerateDetailedReport />} />
+            <Route path="/connect-wallet" element={<ConnectWallet />} />
+            <Route path="/learn-about-rewards" element={<LearnAboutRewards />} />
+            <Route path="/view-all-rewards" element={<ViewAllRewards />} />
+            <Route path="/request-demo" element={<RequestDemo />} />
+            <Route path="/e-kyc" element={<EKycPage />} />
+            <Route path="/police-stations" element={<PoliceStationsMap />} />
+            <Route path="/case-heatmap" element={<CaseHeatmap />} />
+            <Route path="/police-station/:id" element={<PoliceStationDetail />} />
+            <Route path="/help-us" element={<HelpUsPage />} />
+            <Route path="/submit-tip" element={<SubmitTipPage />} />
+            <Route path="/advisory" element={<AdvisoryPage />} />
+            <Route path="/officer-login" element={<OfficerLogin />} />
+            <Route path="/officer-registration" element={<OfficerRegistration />} />
+            <Route path="/officer-dashboard" element={<OfficerDashboard />} />
+            <Route path="/officer-profile" element={<OfficerProfile />} />
+            <Route path="/officer-settings" element={<OfficerSettings />} />
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;
