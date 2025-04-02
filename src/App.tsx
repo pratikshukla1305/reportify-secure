@@ -1,82 +1,78 @@
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { Toaster } from 'sonner';
+import ProtectedRoute from './components/ProtectedRoute';
+import EKycPage from './pages/EKycPage';
+import SignIn from './pages/SignIn';
+import GetStarted from './pages/GetStarted';
+import OfficerLogin from './pages/OfficerLogin';
+import OfficerRegistration from './pages/OfficerRegistration';
+import OfficerProfile from './pages/OfficerProfile';
+import Home from './pages/Home';
+import AboutUs from './pages/AboutUs';
+import Features from './pages/Features';
+import HowItWorks from './pages/HowItWorks';
+import LearnMore from './pages/LearnMore';
+import RequestDemo from './pages/RequestDemo';
+import PoliceStationsMap from './pages/PoliceStationsMap';
+import PoliceStationDetail from './pages/PoliceStationDetail';
+import CaseHeatmap from './pages/CaseHeatmap';
+import HelpUsPage from './pages/HelpUsPage';
+import SubmitTipPage from './pages/SubmitTipPage';
+import AdvisoryPage from './pages/AdvisoryPage';
+import CancelReport from './pages/CancelReport';
+import ContinueReport from './pages/ContinueReport';
+import ViewDraftReport from './pages/ViewDraftReport';
+import GenerateDetailedReport from './pages/GenerateDetailedReport';
+import ViewAllRewards from './pages/ViewAllRewards';
+import LearnAboutRewards from './pages/LearnAboutRewards';
+import ConnectWallet from './pages/ConnectWallet';
+import OfficerDashboard from './pages/OfficerDashboard';
+import OfficerSettings from './pages/OfficerSettings';
+import NotFound from './pages/NotFound';
 
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Index from "./pages/Index";
-import Home from "./pages/Home";
-import FeaturesPage from "./pages/Features";
-import HowItWorks from "./pages/HowItWorks";
-import SignIn from "./pages/SignIn";
-import GetStarted from "./pages/GetStarted";
-import NotFound from "./pages/NotFound";
-import LearnMore from "./pages/LearnMore";
-import ContinueReport from "./pages/ContinueReport";
-import CancelReport from "./pages/CancelReport";
-import ViewDraftReport from "./pages/ViewDraftReport";
-import GenerateDetailedReport from "./pages/GenerateDetailedReport";
-import ConnectWallet from "./pages/ConnectWallet";
-import LearnAboutRewards from "./pages/LearnAboutRewards";
-import ViewAllRewards from "./pages/ViewAllRewards";
-import RequestDemo from "./pages/RequestDemo";
-import EKycPage from "./pages/EKycPage";
-import PoliceStationsMap from "./pages/PoliceStationsMap";
-import CaseHeatmap from "./pages/CaseHeatmap";
-import PoliceStationDetail from "./pages/PoliceStationDetail";
-import HelpUsPage from "./pages/HelpUsPage";
-import SubmitTipPage from "./pages/SubmitTipPage";
-import AdvisoryPage from "./pages/AdvisoryPage";
-import AboutUs from "./pages/AboutUs";
-import OfficerLogin from "./pages/OfficerLogin";
-import OfficerRegistration from "./pages/OfficerRegistration";
-import OfficerDashboard from "./pages/OfficerDashboard";
-import OfficerProfile from "./pages/OfficerProfile";
-import OfficerSettings from "./pages/OfficerSettings";
-
-const queryClient = new QueryClient();
-
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/home" element={<Home />} />
-          <Route path="/features" element={<FeaturesPage />} />
-          <Route path="/how-it-works" element={<HowItWorks />} />
-          <Route path="/signin" element={<SignIn />} />
-          <Route path="/get-started" element={<GetStarted />} />
-          <Route path="/learn-more" element={<LearnMore />} />
-          <Route path="/about-us" element={<AboutUs />} />
-          <Route path="/continue-report" element={<ContinueReport />} />
-          <Route path="/cancel-report" element={<CancelReport />} />
-          <Route path="/view-draft-report" element={<ViewDraftReport />} />
-          <Route path="/generate-detailed-report" element={<GenerateDetailedReport />} />
-          <Route path="/connect-wallet" element={<ConnectWallet />} />
-          <Route path="/learn-about-rewards" element={<LearnAboutRewards />} />
-          <Route path="/view-all-rewards" element={<ViewAllRewards />} />
-          <Route path="/request-demo" element={<RequestDemo />} />
-          <Route path="/e-kyc" element={<EKycPage />} />
-          <Route path="/police-stations" element={<PoliceStationsMap />} />
-          <Route path="/case-heatmap" element={<CaseHeatmap />} />
-          <Route path="/police-station/:id" element={<PoliceStationDetail />} />
-          <Route path="/help-us" element={<HelpUsPage />} />
-          <Route path="/submit-tip" element={<SubmitTipPage />} />
-          <Route path="/advisory" element={<AdvisoryPage />} />
-          <Route path="/officer-login" element={<OfficerLogin />} />
-          <Route path="/officer-registration" element={<OfficerRegistration />} />
-          <Route path="/officer-dashboard" element={<OfficerDashboard />} />
-          <Route path="/officer-profile" element={<OfficerProfile />} />
-          <Route path="/officer-settings" element={<OfficerSettings />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+function App() {
+  return (
+    <Router>
+      <Toaster position="top-right" richColors />
+      <Routes>
+        {/* Public routes */}
+        <Route path="/" element={<Home />} />
+        <Route path="/signin" element={<SignIn />} />
+        <Route path="/get-started" element={<GetStarted />} />
+        <Route path="/officer-login" element={<OfficerLogin />} />
+        <Route path="/officer-registration" element={<OfficerRegistration />} />
+        <Route path="/about-us" element={<AboutUs />} />
+        <Route path="/features" element={<Features />} />
+        <Route path="/how-it-works" element={<HowItWorks />} />
+        <Route path="/learn-more" element={<LearnMore />} />
+        <Route path="/request-demo" element={<RequestDemo />} />
+        
+        {/* Protected routes */}
+        <Route path="/ekyc" element={<ProtectedRoute><EKycPage /></ProtectedRoute>} />
+        <Route path="/police-stations-map" element={<ProtectedRoute><PoliceStationsMap /></ProtectedRoute>} />
+        <Route path="/police-station/:id" element={<ProtectedRoute><PoliceStationDetail /></ProtectedRoute>} />
+        <Route path="/case-heatmap" element={<ProtectedRoute><CaseHeatmap /></ProtectedRoute>} />
+        <Route path="/help-us" element={<ProtectedRoute><HelpUsPage /></ProtectedRoute>} />
+        <Route path="/submit-tip" element={<ProtectedRoute><SubmitTipPage /></ProtectedRoute>} />
+        <Route path="/advisory" element={<ProtectedRoute><AdvisoryPage /></ProtectedRoute>} />
+        <Route path="/cancel-report" element={<ProtectedRoute><CancelReport /></ProtectedRoute>} />
+        <Route path="/continue-report" element={<ProtectedRoute><ContinueReport /></ProtectedRoute>} />
+        <Route path="/view-draft-report" element={<ProtectedRoute><ViewDraftReport /></ProtectedRoute>} />
+        <Route path="/generate-detailed-report" element={<ProtectedRoute><GenerateDetailedReport /></ProtectedRoute>} />
+        <Route path="/view-all-rewards" element={<ProtectedRoute><ViewAllRewards /></ProtectedRoute>} />
+        <Route path="/learn-about-rewards" element={<ProtectedRoute><LearnAboutRewards /></ProtectedRoute>} />
+        <Route path="/connect-wallet" element={<ProtectedRoute><ConnectWallet /></ProtectedRoute>} />
+        
+        {/* Officer routes */}
+        <Route path="/officer-dashboard" element={<OfficerDashboard />} />
+        <Route path="/officer-profile" element={<OfficerProfile />} />
+        <Route path="/officer-settings" element={<OfficerSettings />} />
+        
+        {/* Catch-all route */}
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </Router>
+  );
+}
 
 export default App;
