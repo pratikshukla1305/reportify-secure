@@ -1,9 +1,10 @@
+
 import React, { useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import Hero from '@/components/Hero';
 import Features from '@/components/Features';
 import Footer from '@/components/Footer';
-import UploadCard from '@/components/UploadCard';
+import UploadCard from '@/components/upload/UploadCard';
 import ReportCard from '@/components/ReportCard';
 import CompareCard from '@/components/CompareCard';
 import AuthButton from '@/components/AuthButton';
