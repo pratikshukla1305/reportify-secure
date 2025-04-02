@@ -12,6 +12,7 @@ import KycVerification from '@/components/ekyc/KycVerification';
 import KycCompleted from '@/components/ekyc/KycCompleted';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import { getUserVerificationStatus } from '@/data/kycVerificationsData';
 
 type KycData = {
   fullName: string;
@@ -49,6 +50,7 @@ const EKycPage = () => {
   };
 
   const handleVerificationComplete = () => {
+    // Only move to completed step after verification is submitted
     setCurrentStep("completed");
   };
 
@@ -121,7 +123,8 @@ const EKycPage = () => {
               
               <TabsContent value="completed" className="mt-0">
                 <KycCompleted 
-                  status="pending"
+                  status={getUserVerificationStatus("user-123") as "pending" | "approved" | "rejected"}
+                  userId="user-123"
                   onReset={handleKycReset}
                 />
               </TabsContent>

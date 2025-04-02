@@ -45,11 +45,16 @@ const KycVerification = ({ userId, onComplete, formData }: KycVerificationProps)
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
-    // Check if verification already exists
-    const existingVerification = getKycVerificationByUserId(userId);
-    if (existingVerification && existingVerification.status !== 'rejected') {
-      setIsComplete(true);
-    }
+    // Only check for existing verification when component mounts
+    const checkExistingVerification = () => {
+      const existingVerification = getKycVerificationByUserId(userId);
+      // Only set as complete if there's an approved verification
+      if (existingVerification && existingVerification.status === 'approved') {
+        setIsComplete(true);
+      }
+    };
+    
+    checkExistingVerification();
   }, [userId]);
 
   useEffect(() => {
@@ -180,6 +185,16 @@ const KycVerification = ({ userId, onComplete, formData }: KycVerificationProps)
   };
 
   const handleSubmit = () => {
+    // Ensure all required documents are uploaded
+    if (!idFront || !idBack || !selfie) {
+      toast({
+        title: "Missing Documents",
+        description: "Please upload all required documents (ID Front, ID Back, and Selfie).",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     // Simulate submitting verification documents
     setIsSubmitting(true);
     
@@ -497,7 +512,7 @@ const KycVerification = ({ userId, onComplete, formData }: KycVerificationProps)
             )}
           </Button>
         ) : (
-          <Button onClick={() => {}}>
+          <Button onClick={onComplete || (() => {})}>
             Done
           </Button>
         )}
