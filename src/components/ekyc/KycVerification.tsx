@@ -4,12 +4,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Check, Upload, Shield, X, Eye, Camera, Edit, AlertCircle } from 'lucide-react';
+import { Check, Upload, Shield, X, Eye, Camera, Edit, AlertCircle, Loader2 } from 'lucide-react';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/use-toast';
 import { addKycVerification, getKycVerificationByUserId } from '@/data/kycVerificationsData';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { createWorker } from 'tesseract.js';
 
 export interface KycVerificationProps {
   userId: string;
@@ -37,12 +38,36 @@ const KycVerification = ({ userId, onComplete, formData }: KycVerificationProps)
   const [previewType, setPreviewType] = useState<"idFront" | "idBack" | "selfie" | null>(null);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [captureType, setCaptureType] = useState<"idFront" | "idBack" | "selfie" | null>(null);
-  const [extractedData, setExtractedData] = useState<{idNumber?: string}>({});
+  const [extractedData, setExtractedData] = useState<{
+    idNumber?: string;
+    name?: string;
+    dob?: string;
+    address?: string;
+    gender?: string;
+  }>({});
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editedIdNumber, setEditedIdNumber] = useState("");
+  const [isProcessing, setIsProcessing] = useState(false);
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const workerRef = useRef<Tesseract.Worker | null>(null);
+
+  // Initialize Tesseract worker
+  useEffect(() => {
+    const initWorker = async () => {
+      const worker = await createWorker('eng');
+      workerRef.current = worker;
+    };
+
+    initWorker();
+
+    return () => {
+      if (workerRef.current) {
+        workerRef.current.terminate();
+      }
+    };
+  }, []);
 
   useEffect(() => {
     // Only check for existing verification when component mounts
@@ -58,28 +83,136 @@ const KycVerification = ({ userId, onComplete, formData }: KycVerificationProps)
   }, [userId]);
 
   useEffect(() => {
-    // If ID front is set and we have formData, simulate OCR extraction
+    // If ID front is set, process it for OCR extraction
     if (idFront && formData) {
-      // Simulate OCR extraction delay
-      setTimeout(() => {
-        // Mock extraction - in a real app, this would use OCR
-        const extractedIdNumber = formData.idNumber;
-        setExtractedData({ idNumber: extractedIdNumber });
-        
-        // Show toast notification about extracted data
-        toast({
-          title: "ID Number Extracted",
-          description: `ID Number (${extractedIdNumber}) has been extracted from your document.`,
-        });
-        
-        // If extracted ID is different from form data, show edit dialog
-        if (extractedIdNumber !== formData.idNumber) {
-          setEditedIdNumber(extractedIdNumber);
-          setIsEditDialogOpen(true);
-        }
-      }, 1500);
+      extractDataFromAadhaar(idFront);
     }
   }, [idFront, formData]);
+
+  const extractDataFromAadhaar = async (idImage: File) => {
+    if (!workerRef.current) {
+      toast({
+        title: "OCR Not Ready",
+        description: "Please wait for the OCR system to initialize.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      setIsProcessing(true);
+      toast({
+        title: "Processing Aadhaar Card",
+        description: "We're extracting information from your ID. This may take a moment..."
+      });
+
+      // Create an image URL for the file
+      const imageUrl = URL.createObjectURL(idImage);
+      
+      // Perform OCR on the image
+      const result = await workerRef.current.recognize(imageUrl);
+      
+      // Clean up the URL
+      URL.revokeObjectURL(imageUrl);
+      
+      // Process the OCR text
+      const ocrText = result.data.text;
+      console.log('OCR extracted text:', ocrText);
+      
+      // Extract Aadhaar number using regex pattern (12 digits, may be space-separated)
+      const aadhaarRegex = /\b(\d{4}\s?\d{4}\s?\d{4})\b/;
+      const aadhaarMatch = ocrText.match(aadhaarRegex);
+      
+      // Create object to store extracted data
+      const extracted: {
+        idNumber?: string;
+        name?: string;
+        dob?: string;
+        address?: string;
+        gender?: string;
+      } = {};
+      
+      // If we found an Aadhaar number
+      if (aadhaarMatch) {
+        // Remove spaces from Aadhaar number
+        const aadhaarNumber = aadhaarMatch[1].replace(/\s/g, '');
+        extracted.idNumber = aadhaarNumber;
+        
+        // Look for DOB pattern (DD/MM/YYYY)
+        const dobRegex = /\b(\d{2}\/\d{2}\/\d{4})\b/;
+        const dobMatch = ocrText.match(dobRegex);
+        if (dobMatch) {
+          extracted.dob = dobMatch[1];
+        }
+        
+        // Look for name - typically appears with "Name:" or after "To,"
+        // This is a simplified approach, a more robust solution would use NER
+        const nameLines = ocrText.split('\n').filter(line => 
+          line.includes('Name:') || 
+          (line.length > 10 && /^[A-Z][a-z]+ [A-Z][a-z]+/.test(line))
+        );
+        
+        if (nameLines.length > 0) {
+          const nameLine = nameLines[0];
+          if (nameLine.includes('Name:')) {
+            extracted.name = nameLine.split('Name:')[1].trim();
+          } else {
+            // Just take the first capitalized words as the name
+            extracted.name = nameLine.trim();
+          }
+        }
+        
+        // Extract gender if present
+        if (ocrText.includes('MALE') || ocrText.includes('Male')) {
+          extracted.gender = 'Male';
+        } else if (ocrText.includes('FEMALE') || ocrText.includes('Female')) {
+          extracted.gender = 'Female';
+        }
+        
+        // Extract address - usually multi-line and after "Address:"
+        // This is simplified; a more robust solution would use NER or layout analysis
+        const addressIndex = ocrText.indexOf('Address:');
+        if (addressIndex > -1) {
+          const addressText = ocrText.substring(addressIndex + 8);
+          const endOfAddress = addressText.indexOf('\n\n');
+          if (endOfAddress > -1) {
+            extracted.address = addressText.substring(0, endOfAddress).trim();
+          } else {
+            extracted.address = addressText.substring(0, 100).trim(); // Take first 100 chars
+          }
+        }
+        
+        // Set the extracted data
+        setExtractedData(extracted);
+        
+        // If extracted ID is different from form data, show edit dialog
+        if (extracted.idNumber && extracted.idNumber !== formData?.idNumber) {
+          setEditedIdNumber(extracted.idNumber);
+          setIsEditDialogOpen(true);
+        }
+        
+        toast({
+          title: "Data Extracted",
+          description: "We've successfully extracted information from your Aadhaar card."
+        });
+      } else {
+        toast({
+          title: "Extraction Issue",
+          description: "We couldn't identify an Aadhaar number. Please ensure the image is clear and try again.",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error('OCR extraction error:', error);
+      toast({
+        title: "Extraction Failed",
+        description: "We encountered an error while processing your ID. Please try again with a clearer image.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
   const handleIdFrontChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -260,7 +393,7 @@ const KycVerification = ({ userId, onComplete, formData }: KycVerificationProps)
             
             <TabsContent value="id" className="mt-4">
               <div className="grid gap-4">
-                <Label htmlFor="id-front">Upload or Capture Front of ID</Label>
+                <Label htmlFor="id-front">Upload or Capture Front of Aadhaar Card</Label>
                 <div className="flex gap-2">
                   <input
                     type="file"
@@ -308,20 +441,26 @@ const KycVerification = ({ userId, onComplete, formData }: KycVerificationProps)
                     >
                       <Eye className="h-4 w-4" />
                     </Button>
+                    
+                    {isProcessing && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-md">
+                        <div className="text-center text-white">
+                          <Loader2 className="h-8 w-8 animate-spin mx-auto" />
+                          <p className="mt-2">Extracting data...</p>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
                 
                 {/* Extracted data section */}
-                {extractedData.idNumber && (
+                {Object.keys(extractedData).length > 0 && (
                   <div className="mt-4 p-4 bg-blue-50 rounded-md">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h4 className="font-medium flex items-center">
-                          <Check className="h-4 w-4 mr-2 text-green-500" />
-                          Extracted Information
-                        </h4>
-                        <p className="text-sm mt-1">ID Number: {extractedData.idNumber}</p>
-                      </div>
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="font-medium flex items-center">
+                        <Check className="h-4 w-4 mr-2 text-green-500" />
+                        Extracted Information
+                      </h4>
                       <Button 
                         variant="ghost" 
                         size="sm" 
@@ -334,6 +473,24 @@ const KycVerification = ({ userId, onComplete, formData }: KycVerificationProps)
                         Edit
                       </Button>
                     </div>
+                    
+                    <div className="space-y-2 text-sm">
+                      {extractedData.idNumber && (
+                        <p><span className="font-semibold">Aadhaar Number:</span> {extractedData.idNumber}</p>
+                      )}
+                      {extractedData.name && (
+                        <p><span className="font-semibold">Name:</span> {extractedData.name}</p>
+                      )}
+                      {extractedData.dob && (
+                        <p><span className="font-semibold">Date of Birth:</span> {extractedData.dob}</p>
+                      )}
+                      {extractedData.gender && (
+                        <p><span className="font-semibold">Gender:</span> {extractedData.gender}</p>
+                      )}
+                      {extractedData.address && (
+                        <p><span className="font-semibold">Address:</span> {extractedData.address}</p>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
@@ -341,7 +498,7 @@ const KycVerification = ({ userId, onComplete, formData }: KycVerificationProps)
             
             <TabsContent value="idBack" className="mt-4">
               <div className="grid gap-4">
-                <Label htmlFor="id-back">Upload or Capture Back of ID</Label>
+                <Label htmlFor="id-back">Upload or Capture Back of Aadhaar Card</Label>
                 <div className="flex gap-2">
                   <input
                     type="file"
@@ -505,6 +662,7 @@ const KycVerification = ({ userId, onComplete, formData }: KycVerificationProps)
           <Button onClick={handleSubmit} disabled={isSubmitting || !idFront || !idBack || !selfie}>
             {isSubmitting ? (
               <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Submitting...
               </>
             ) : (
@@ -525,8 +683,8 @@ const KycVerification = ({ userId, onComplete, formData }: KycVerificationProps)
         <SheetContent className="w-full sm:max-w-full flex flex-col">
           <SheetHeader>
             <SheetTitle>
-              Capture {captureType === "idFront" ? "ID Front" : 
-                     captureType === "idBack" ? "ID Back" : "Selfie"}
+              Capture {captureType === "idFront" ? "Aadhaar Front" : 
+                     captureType === "idBack" ? "Aadhaar Back" : "Selfie"}
             </SheetTitle>
             <SheetDescription>
               Position your {captureType === "selfie" ? "face" : "document"} within the frame and take a photo
@@ -573,8 +731,8 @@ const KycVerification = ({ userId, onComplete, formData }: KycVerificationProps)
         <SheetContent className="w-full sm:max-w-full">
           <SheetHeader>
             <SheetTitle>
-              {previewType === "idFront" ? "ID Front" : 
-               previewType === "idBack" ? "ID Back" : "Selfie"} Preview
+              {previewType === "idFront" ? "Aadhaar Front" : 
+               previewType === "idBack" ? "Aadhaar Back" : "Selfie"} Preview
             </SheetTitle>
             <SheetDescription>
               View your uploaded document in full size
@@ -610,21 +768,25 @@ const KycVerification = ({ userId, onComplete, formData }: KycVerificationProps)
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Edit Extracted ID Number</DialogTitle>
+            <DialogTitle>Edit Extracted Aadhaar Number</DialogTitle>
           </DialogHeader>
           <div className="py-4">
             <div className="flex items-center space-x-2 mb-4">
               <AlertCircle className="h-5 w-5 text-yellow-500" />
               <p className="text-sm text-muted-foreground">
-                Please verify the extracted ID number and make corrections if needed.
+                Please verify the extracted Aadhaar number and make corrections if needed.
               </p>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="idNumber">ID Number</Label>
+              <Label htmlFor="idNumber">Aadhaar Number</Label>
               <Input
                 id="idNumber"
                 value={editedIdNumber}
                 onChange={(e) => setEditedIdNumber(e.target.value)}
+                maxLength={12}
+                pattern="\d*"
+                inputMode="numeric"
+                placeholder="12-digit Aadhaar number"
               />
             </div>
           </div>

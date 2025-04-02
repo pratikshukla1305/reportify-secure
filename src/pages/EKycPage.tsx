@@ -13,6 +13,7 @@ import KycCompleted from '@/components/ekyc/KycCompleted';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { getUserVerificationStatus } from '@/data/kycVerificationsData';
+import { toast } from '@/hooks/use-toast';
 
 type KycData = {
   fullName: string;
@@ -45,13 +46,37 @@ const EKycPage = () => {
   }>({});
 
   const handleFormSubmit = (data: KycData) => {
+    // Validate if we're using Indian nationality with Aadhaar
+    if (data.nationality.toLowerCase() === 'india' || data.nationality.toLowerCase() === 'indian') {
+      // Check if it's a 12-digit number (Aadhaar ID)
+      const aadhaarRegex = /^\d{12}$/;
+      if (!aadhaarRegex.test(data.idNumber.replace(/\s/g, ''))) {
+        toast({
+          title: "Invalid Aadhaar Number",
+          description: "Please enter a valid 12-digit Aadhaar number without spaces.",
+          variant: "destructive"
+        });
+        return;
+      }
+    }
+    
     setKycData(data);
     setCurrentStep("verification");
+    
+    toast({
+      title: "Personal Information Saved",
+      description: "Please complete document verification in the next step."
+    });
   };
 
   const handleVerificationComplete = () => {
     // Only move to completed step after verification is submitted
     setCurrentStep("completed");
+    
+    toast({
+      title: "Verification Submitted",
+      description: "Your verification is being processed. You can check the status here."
+    });
   };
 
   const handleKycReset = () => {
@@ -68,6 +93,11 @@ const EKycPage = () => {
       email: ""
     });
     setUploadedDocuments({});
+    
+    toast({
+      title: "KYC Reset",
+      description: "You can now start a new KYC verification process."
+    });
   };
 
   return (
