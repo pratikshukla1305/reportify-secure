@@ -2,7 +2,7 @@
 import React from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import UploadCard from '@/components/upload/UploadCard';
+import UploadCard from '@/components/UploadCard';
 import ReportCard from '@/components/ReportCard';
 import CompareCard from '@/components/CompareCard';
 import { Shield } from 'lucide-react';
