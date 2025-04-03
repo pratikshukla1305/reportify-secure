@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -56,24 +55,19 @@ const KycVerification = ({ userId, onComplete, formData }: KycVerificationProps)
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const workerRef = useRef<any>(null);
 
-  // Initialize Tesseract worker with improved configuration
+  // Initialize Tesseract worker with improved configuration for v5
   useEffect(() => {
     const initWorker = async () => {
-      // Initialize worker with English language for better recognition
       try {
-        const worker = await createWorker();
-        await worker.load();
-        await worker.loadLanguage('eng');
-        await worker.initialize('eng');
+        // Create worker with proper configuration for v5
+        const worker = await createWorker('eng');
         
-        // Set parameters for better OCR performance
+        // In v5, we can directly set the parameters after creating the worker
         await worker.setParameters({
           tessedit_char_whitelist: '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz/- ',
-          tessedit_ocr_engine_mode: '1', // Use LSTM only
         });
         
         workerRef.current = worker;
-        
         console.log("Tesseract worker initialized successfully");
       } catch (error) {
         console.error("Failed to initialize Tesseract worker:", error);
@@ -170,11 +164,12 @@ const KycVerification = ({ userId, onComplete, formData }: KycVerificationProps)
         // Get the enhanced image
         const enhancedImage = canvas.toDataURL('image/png');
         
-        // Perform OCR on the enhanced image
+        // Perform OCR on the enhanced image with v5 API
         try {
+          // In v5, we use recognize directly on the worker
           const result = await workerRef.current.recognize(enhancedImage);
           
-          // Process the OCR text
+          // Process the OCR text - in v5 the result structure is different
           const ocrText = result.data.text;
           console.log('OCR extracted text:', ocrText);
           
@@ -187,7 +182,7 @@ const KycVerification = ({ userId, onComplete, formData }: KycVerificationProps)
             gender?: string;
           } = {};
           
-          // Extract Aadhaar number using multiple regex patterns
+          // More aggressive Aadhaar number pattern matching
           // Pattern for 12 digits, which may be space-separated or hyphen-separated
           const aadhaarPatterns = [
             /\b(\d{4}\s?\d{4}\s?\d{4})\b/,         // XXXX XXXX XXXX
@@ -195,21 +190,43 @@ const KycVerification = ({ userId, onComplete, formData }: KycVerificationProps)
             /\b(\d{12})\b/,                        // XXXXXXXXXXXX 
             /[Nn]umber\s*:?\s*(\d{4}[\s-]?\d{4}[\s-]?\d{4})/,  // Number: XXXX XXXX XXXX
             /[Aa]adhaar\s*:?\s*(\d{4}[\s-]?\d{4}[\s-]?\d{4})/, // Aadhaar: XXXX XXXX XXXX
-            /[Uu][Ii][Dd]\s*:?\s*(\d{4}[\s-]?\d{4}[\s-]?\d{4})/ // UID: XXXX XXXX XXXX
+            /[Uu][Ii][Dd]\s*:?\s*(\d{4}[\s-]?\d{4}[\s-]?\d{4})/, // UID: XXXX XXXX XXXX
+            // Enhanced patterns to catch more variations
+            /\d{4}[\s-]?\d{4}[\s-]?\d{4}/,  // Just look for 12 digits with optional spaces/hyphens
+            /[0-9]{4}[\s-]?[0-9]{4}[\s-]?[0-9]{4}/, // Another variation
+            /\d{4}.*\d{4}.*\d{4}/ // Very loose pattern - any 3 groups of 4 digits
           ];
           
           // Try each pattern until we find a match
           let aadhaarMatch = null;
           for (const pattern of aadhaarPatterns) {
             aadhaarMatch = ocrText.match(pattern);
-            if (aadhaarMatch) break;
+            if (aadhaarMatch) {
+              console.log("Found Aadhaar pattern match:", aadhaarMatch[0]);
+              break;
+            }
           }
           
           // If we found an Aadhaar number
           if (aadhaarMatch) {
             // Remove spaces and hyphens from Aadhaar number
-            const aadhaarNumber = aadhaarMatch[1].replace(/[\s-]/g, '');
-            extracted.idNumber = aadhaarNumber;
+            let aadhaarNumber = aadhaarMatch[0];
+            if (aadhaarMatch.length > 1) {
+              aadhaarNumber = aadhaarMatch[1];
+            }
+            
+            // Clean up the Aadhaar number - remove all non-digits
+            aadhaarNumber = aadhaarNumber.replace(/[^0-9]/g, '');
+            
+            // Check if we have 12 digits (Aadhaar length)
+            if (aadhaarNumber.length === 12) {
+              // Format as XXXX XXXX XXXX
+              aadhaarNumber = aadhaarNumber.replace(/(\d{4})(\d{4})(\d{4})/, '$1 $2 $3');
+              extracted.idNumber = aadhaarNumber;
+              console.log("Extracted Aadhaar number:", aadhaarNumber);
+            } else {
+              console.log("Found potential Aadhaar number but length is incorrect:", aadhaarNumber.length);
+            }
             
             // Enhanced DOB extraction - try multiple date formats
             const dobPatterns = [
@@ -829,172 +846,4 @@ const KycVerification = ({ userId, onComplete, formData }: KycVerificationProps)
               </div>
               <div>
                 <Label className="text-sm text-gray-500">Nationality</Label>
-                <p className="font-medium">{formData.nationality}</p>
-              </div>
-              <div>
-                <Label className="text-sm text-gray-500">ID Type</Label>
-                <p className="font-medium">{formData.idType.replace('_', ' ')}</p>
-              </div>
-              <div>
-                <Label className="text-sm text-gray-500">ID Number</Label>
-                <p className="font-medium">{formData.idNumber}</p>
-              </div>
-              <div>
-                <Label className="text-sm text-gray-500">Phone</Label>
-                <p className="font-medium">{formData.phone}</p>
-              </div>
-              <div>
-                <Label className="text-sm text-gray-500">Email</Label>
-                <p className="font-medium">{formData.email}</p>
-              </div>
-              <div>
-                <Label className="text-sm text-gray-500">Address</Label>
-                <p className="font-medium">{formData.address}</p>
-              </div>
-            </div>
-          </div>
-        )}
-      </CardContent>
-      
-      <CardFooter className="flex justify-between">
-        {!isComplete ? (
-          <Button onClick={handleSubmit} disabled={isSubmitting || !idFront || !idBack || !selfie}>
-            {isSubmitting ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Submitting...
-              </>
-            ) : (
-              "Submit Verification"
-            )}
-          </Button>
-        ) : (
-          <Button variant="outline" onClick={() => onComplete && onComplete()}>
-            Continue
-          </Button>
-        )}
-      </CardFooter>
-      
-      {/* Preview sheet for document and selfie images */}
-      <Sheet open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
-        <SheetContent className="w-full sm:max-w-lg">
-          <SheetHeader>
-            <SheetTitle>
-              {previewType === "idFront" 
-                ? "ID Front" 
-                : previewType === "idBack" 
-                  ? "ID Back" 
-                  : "Selfie"} Preview
-            </SheetTitle>
-          </SheetHeader>
-          <div className="mt-8 text-center">
-            {previewType === "idFront" && idFront && (
-              <img 
-                src={URL.createObjectURL(idFront)} 
-                alt="ID Front" 
-                className="max-h-[70vh] max-w-full mx-auto rounded-md"
-              />
-            )}
-            {previewType === "idBack" && idBack && (
-              <img 
-                src={URL.createObjectURL(idBack)} 
-                alt="ID Back" 
-                className="max-h-[70vh] max-w-full mx-auto rounded-md"
-              />
-            )}
-            {previewType === "selfie" && selfie && (
-              <img 
-                src={URL.createObjectURL(selfie)} 
-                alt="Selfie" 
-                className="max-h-[70vh] max-w-full mx-auto rounded-md"
-              />
-            )}
-          </div>
-        </SheetContent>
-      </Sheet>
-      
-      {/* Camera dialog */}
-      <Dialog open={isCameraOpen} onOpenChange={(open) => !open && handleCameraClose()}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>
-              Capture {captureType === "idFront" 
-                ? "ID Front" 
-                : captureType === "idBack" 
-                  ? "ID Back" 
-                  : "Selfie"}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="relative bg-black rounded-md overflow-hidden">
-            <video 
-              ref={videoRef} 
-              autoPlay 
-              playsInline 
-              className="w-full h-auto"
-            />
-            <canvas ref={canvasRef} className="hidden" />
-          </div>
-          <DialogFooter className="flex gap-2">
-            <Button variant="outline" onClick={handleCameraClose}>
-              Cancel
-            </Button>
-            <Button onClick={capturePhoto}>
-              <Camera className="mr-2 h-4 w-4" />
-              Capture
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      
-      {/* Edit dialog for extracted data */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>
-              Edit {editDialogType === "idNumber" 
-                ? "ID Number" 
-                : editDialogType === "name" 
-                  ? "Name" 
-                  : "Date of Birth"}
-            </DialogTitle>
-          </DialogHeader>
-          {editDialogType === "idNumber" && (
-            <div className="grid gap-4 py-4">
-              <Label htmlFor="edit-id-number">ID Number</Label>
-              <Input 
-                id="edit-id-number" 
-                value={editedIdNumber} 
-                onChange={(e) => setEditedIdNumber(e.target.value)} 
-              />
-            </div>
-          )}
-          {editDialogType === "name" && (
-            <div className="grid gap-4 py-4">
-              <Label htmlFor="edit-name">Name</Label>
-              <Input 
-                id="edit-name" 
-                value={editedName} 
-                onChange={(e) => setEditedName(e.target.value)} 
-              />
-            </div>
-          )}
-          {editDialogType === "dob" && (
-            <div className="grid gap-4 py-4">
-              <Label htmlFor="edit-dob">Date of Birth</Label>
-              <Input 
-                id="edit-dob" 
-                value={editedDob} 
-                onChange={(e) => setEditedDob(e.target.value)} 
-              />
-            </div>
-          )}
-          <DialogFooter>
-            <Button onClick={handleEditData}>Save Changes</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </Card>
-  );
-};
-
-export default KycVerification;
+                <p className="font
