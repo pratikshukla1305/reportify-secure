@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -56,18 +55,13 @@ const KycVerification = ({ userId, onComplete, formData }: KycVerificationProps)
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const workerRef = useRef<any>(null);
 
-  // Initialize Tesseract worker with improved configuration for v5
   useEffect(() => {
     const initWorker = async () => {
       try {
-        // Create worker with proper configuration for v5
         const worker = await createWorker('eng');
-        
-        // In v5, we can directly set the parameters after creating the worker
         await worker.setParameters({
           tessedit_char_whitelist: '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz/- ',
         });
-        
         workerRef.current = worker;
         console.log("Tesseract worker initialized successfully");
       } catch (error) {
@@ -90,10 +84,8 @@ const KycVerification = ({ userId, onComplete, formData }: KycVerificationProps)
   }, []);
 
   useEffect(() => {
-    // Only check for existing verification when component mounts
     const checkExistingVerification = () => {
       const existingVerification = getKycVerificationByUserId(userId);
-      // Only set as complete if there's an approved verification
       if (existingVerification && existingVerification.status === 'approved') {
         setIsComplete(true);
       }
@@ -103,7 +95,6 @@ const KycVerification = ({ userId, onComplete, formData }: KycVerificationProps)
   }, [userId]);
 
   useEffect(() => {
-    // If ID front is set, process it for OCR extraction
     if (idFront && formData) {
       extractDataFromAadhaar(idFront);
     }
@@ -126,10 +117,8 @@ const KycVerification = ({ userId, onComplete, formData }: KycVerificationProps)
         description: "We're extracting information from your ID. This may take a moment..."
       });
 
-      // Create an image URL for the file
       const imageUrl = URL.createObjectURL(idImage);
       
-      // Process image with canvas first to improve OCR accuracy
       const img = new Image();
       img.onload = async () => {
         const canvas = document.createElement('canvas');
@@ -140,19 +129,14 @@ const KycVerification = ({ userId, onComplete, formData }: KycVerificationProps)
           throw new Error("Could not get canvas context");
         }
         
-        // Set canvas dimensions
         canvas.width = img.width;
         canvas.height = img.height;
         
-        // Draw and enhance image
         ctx.drawImage(img, 0, 0, img.width, img.height);
         
-        // Apply image processing for better OCR
-        // Convert to high contrast black and white
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
         const data = imageData.data;
         
-        // Apply simple thresholding to improve text contrast
         for (let i = 0; i < data.length; i += 4) {
           const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
           const threshold = 127;
@@ -162,19 +146,14 @@ const KycVerification = ({ userId, onComplete, formData }: KycVerificationProps)
         
         ctx.putImageData(imageData, 0, 0);
         
-        // Get the enhanced image
         const enhancedImage = canvas.toDataURL('image/png');
         
-        // Perform OCR on the enhanced image with v5 API
         try {
-          // In v5, we use recognize directly on the worker
           const result = await workerRef.current.recognize(enhancedImage);
           
-          // Process the OCR text - in v5 the result structure is different
           const ocrText = result.data.text;
           console.log('OCR extracted text:', ocrText);
           
-          // Create object to store extracted data
           const extracted: {
             idNumber?: string;
             name?: string;
@@ -183,22 +162,18 @@ const KycVerification = ({ userId, onComplete, formData }: KycVerificationProps)
             gender?: string;
           } = {};
           
-          // More aggressive Aadhaar number pattern matching
-          // Pattern for 12 digits, which may be space-separated or hyphen-separated
           const aadhaarPatterns = [
-            /\b(\d{4}\s?\d{4}\s?\d{4})\b/,         // XXXX XXXX XXXX
-            /\b(\d{4}-\d{4}-\d{4})\b/,             // XXXX-XXXX-XXXX
-            /\b(\d{12})\b/,                        // XXXXXXXXXXXX 
-            /[Nn]umber\s*:?\s*(\d{4}[\s-]?\d{4}[\s-]?\d{4})/,  // Number: XXXX XXXX XXXX
-            /[Aa]adhaar\s*:?\s*(\d{4}[\s-]?\d{4}[\s-]?\d{4})/, // Aadhaar: XXXX XXXX XXXX
-            /[Uu][Ii][Dd]\s*:?\s*(\d{4}[\s-]?\d{4}[\s-]?\d{4})/, // UID: XXXX XXXX XXXX
-            // Enhanced patterns to catch more variations
-            /\d{4}[\s-]?\d{4}[\s-]?\d{4}/,  // Just look for 12 digits with optional spaces/hyphens
-            /[0-9]{4}[\s-]?[0-9]{4}[\s-]?[0-9]{4}/, // Another variation
-            /\d{4}.*\d{4}.*\d{4}/ // Very loose pattern - any 3 groups of 4 digits
+            /\b(\d{4}\s?\d{4}\s?\d{4})\b/,
+            /\b(\d{4}-\d{4}-\d{4})\b/,
+            /\b(\d{12})\b/,
+            /[Nn]umber\s*:?\s*(\d{4}[\s-]?\d{4}[\s-]?\d{4})/,
+            /[Aa]adhaar\s*:?\s*(\d{4}[\s-]?\d{4}[\s-]?\d{4})/,
+            /[Uu][Ii][Dd]\s*:?\s*(\d{4}[\s-]?\d{4}[\s-]?\d{4})/,
+            /\d{4}[\s-]?\d{4}[\s-]?\d{4}/,
+            /[0-9]{4}[\s-]?[0-9]{4}[\s-]?[0-9]{4}/,
+            /\d{4}.*\d{4}.*\d{4}/
           ];
           
-          // Try each pattern until we find a match
           let aadhaarMatch = null;
           for (const pattern of aadhaarPatterns) {
             aadhaarMatch = ocrText.match(pattern);
@@ -208,20 +183,15 @@ const KycVerification = ({ userId, onComplete, formData }: KycVerificationProps)
             }
           }
           
-          // If we found an Aadhaar number
           if (aadhaarMatch) {
-            // Remove spaces and hyphens from Aadhaar number
             let aadhaarNumber = aadhaarMatch[0];
             if (aadhaarMatch.length > 1) {
               aadhaarNumber = aadhaarMatch[1];
             }
             
-            // Clean up the Aadhaar number - remove all non-digits
             aadhaarNumber = aadhaarNumber.replace(/[^0-9]/g, '');
             
-            // Check if we have 12 digits (Aadhaar length)
             if (aadhaarNumber.length === 12) {
-              // Format as XXXX XXXX XXXX
               aadhaarNumber = aadhaarNumber.replace(/(\d{4})(\d{4})(\d{4})/, '$1 $2 $3');
               extracted.idNumber = aadhaarNumber;
               console.log("Extracted Aadhaar number:", aadhaarNumber);
@@ -229,20 +199,18 @@ const KycVerification = ({ userId, onComplete, formData }: KycVerificationProps)
               console.log("Found potential Aadhaar number but length is incorrect:", aadhaarNumber.length);
             }
             
-            // Enhanced DOB extraction - try multiple date formats
             const dobPatterns = [
               /\b(DOB|Date\s+of\s+Birth|Birth\s+Date)[\s:]+(\d{2}[/.-]\d{2}[/.-]\d{4})\b/i,
               /\b(DOB|Date\s+of\s+Birth|Birth\s+Date)[\s:]+(\d{2}[/.-]\d{2}[/.-]\d{2})\b/i,
-              /\b(\d{2}[/.-]\d{2}[/.-]\d{4})\b/,                     // DD/MM/YYYY
-              /\b(\d{2}[/.-]\d{2}[/.-]\d{2})\b/,                     // DD/MM/YY
-              /\b(0[1-9]|[12][0-9]|3[01])[/.-](0[1-9]|1[0-2])[/.-](19|20)\d{2}\b/ // DD/MM/YYYY with validation
+              /\b(\d{2}[/.-]\d{2}[/.-]\d{4})\b/,
+              /\b(\d{2}[/.-]\d{2}[/.-]\d{2})\b/,
+              /\b(0[1-9]|[12][0-9]|3[01])[/.-](0[1-9]|1[0-2])[/.-](19|20)\d{2}\b/
             ];
             
             let dobMatch = null;
             for (const pattern of dobPatterns) {
               const matches = ocrText.match(pattern);
               if (matches) {
-                // If the pattern has a named group (like "DOB:"), take the second capture group
                 dobMatch = matches.length > 2 ? matches[2] : matches[1];
                 break;
               }
@@ -252,13 +220,11 @@ const KycVerification = ({ userId, onComplete, formData }: KycVerificationProps)
               extracted.dob = dobMatch;
             }
             
-            // Enhanced name extraction
-            // 1. First try to find name with labels like "Name:" or "नाम:" (Hindi)
             const nameLabels = [
               /Name\s*[:]?\s*([A-Z][a-z]+(?: [A-Z][a-z]+)+)/i,
-              /\b([A-Z][a-z]+(?: [A-Z][a-z]+){1,3})\b(?=.*DOB|.*Date)/i,  // Name followed by DOB somewhere
-              /\b([A-Z][a-z]+(?: [A-Z][a-z]+){1,3})\b(?=.*\d{4}[\s-]?\d{4}[\s-]?\d{4})/i, // Name near Aadhaar number
-              /\b([A-Z][a-z]+(?: [A-Z][a-z]+){1,2})\b/   // Just any properly formatted name (last resort)
+              /\b([A-Z][a-z]+(?: [A-Z][a-z]+){1,3})\b(?=.*DOB|.*Date)/i,
+              /\b([A-Z][a-z]+(?: [A-Z][a-z]+){1,3})\b(?=.*\d{4}[\s-]?\d{4}[\s-]?\d{4})/i,
+              /\b([A-Z][a-z]+(?: [A-Z][a-z]+){1,2})\b/
             ];
             
             let nameMatch = null;
@@ -266,7 +232,6 @@ const KycVerification = ({ userId, onComplete, formData }: KycVerificationProps)
               const matches = ocrText.match(pattern);
               if (matches) {
                 nameMatch = matches[1];
-                // Verify it's a name (more than one word, not including any digits)
                 if (nameMatch.split(/\s+/).length > 1 && !/\d/.test(nameMatch)) {
                   break;
                 }
@@ -274,9 +239,7 @@ const KycVerification = ({ userId, onComplete, formData }: KycVerificationProps)
             }
             
             if (nameMatch) {
-              // Clean up the name - remove extra spaces, normalize case
               const cleanedName = nameMatch.replace(/\s+/g, ' ').trim();
-              // If name is all uppercase, convert to title case
               if (cleanedName === cleanedName.toUpperCase()) {
                 extracted.name = cleanedName.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
               } else {
@@ -284,23 +247,19 @@ const KycVerification = ({ userId, onComplete, formData }: KycVerificationProps)
               }
             }
             
-            // Extract gender if present
             if (ocrText.match(/\b(male|MALE)\b/i)) {
               extracted.gender = 'Male';
             } else if (ocrText.match(/\b(female|FEMALE)\b/i)) {
               extracted.gender = 'Female';
             }
             
-            // Extract address - usually multi-line and after "Address:"
             const addressMatch = ocrText.match(/Address\s*[:]?\s*([\s\S]*?)(?=\n\n|\n[A-Z]|$)/i);
             if (addressMatch) {
               extracted.address = addressMatch[1].trim();
             }
             
-            // Set the extracted data
             setExtractedData(extracted);
             
-            // Check if we need to show edit dialog for any field
             const needsEditing = 
               (extracted.idNumber && formData?.idNumber && extracted.idNumber !== formData.idNumber) ||
               (extracted.name && formData?.fullName && !formData.fullName.includes(extracted.name)) ||
@@ -340,7 +299,6 @@ const KycVerification = ({ userId, onComplete, formData }: KycVerificationProps)
             variant: "destructive"
           });
         } finally {
-          // Clean up
           URL.revokeObjectURL(imageUrl);
           setIsProcessing(false);
         }
@@ -396,7 +354,6 @@ const KycVerification = ({ userId, onComplete, formData }: KycVerificationProps)
     setCaptureType(type);
     setIsCameraOpen(true);
     
-    // Start camera when dialog opens
     setTimeout(() => {
       startCamera();
     }, 100);
@@ -433,22 +390,17 @@ const KycVerification = ({ userId, onComplete, formData }: KycVerificationProps)
       const video = videoRef.current;
       const canvas = canvasRef.current;
       
-      // Set canvas dimensions to match video
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
       
-      // Draw video frame to canvas
       const context = canvas.getContext('2d');
       if (context) {
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
         
-        // Convert canvas to blob
         canvas.toBlob((blob) => {
           if (blob) {
-            // Create File object from blob
             const file = new File([blob], `${captureType}-${Date.now()}.jpg`, { type: 'image/jpeg' });
             
-            // Set the appropriate file based on capture type
             if (captureType === 'idFront') setIdFront(file);
             else if (captureType === 'idBack') setIdBack(file);
             else if (captureType === 'selfie') setSelfie(file);
@@ -461,7 +413,6 @@ const KycVerification = ({ userId, onComplete, formData }: KycVerificationProps)
         }, 'image/jpeg', 0.95);
       }
       
-      // Close camera after capture
       setIsCameraOpen(false);
       stopCamera();
     }
@@ -473,7 +424,6 @@ const KycVerification = ({ userId, onComplete, formData }: KycVerificationProps)
   };
 
   const handleSubmit = () => {
-    // Ensure all required documents are uploaded
     if (!idFront || !idBack || !selfie) {
       toast({
         title: "Missing Documents",
@@ -483,20 +433,14 @@ const KycVerification = ({ userId, onComplete, formData }: KycVerificationProps)
       return;
     }
     
-    // Simulate submitting verification documents
     setIsSubmitting(true);
     
     setTimeout(() => {
-      // In a real application, we would upload these files to storage
-      // and save the URLs in the database
-      
-      // Add verification to our shared data store
       if (formData) {
         addKycVerification({
           userId,
           name: formData.fullName,
           email: formData.email,
-          // Create object URLs for demo purposes
           document: idFront ? URL.createObjectURL(idFront) : '',
           photo: selfie ? URL.createObjectURL(selfie) : '',
           status: 'pending',
@@ -512,7 +456,6 @@ const KycVerification = ({ userId, onComplete, formData }: KycVerificationProps)
         description: "Your identity verification has been submitted successfully.",
       });
       
-      // Call onComplete if provided
       if (onComplete) {
         onComplete();
       }
@@ -520,22 +463,18 @@ const KycVerification = ({ userId, onComplete, formData }: KycVerificationProps)
   };
 
   const handleEditData = () => {
-    // Update formData with corrected data based on dialog type
     if (formData) {
       if (editDialogType === "idNumber") {
-        // In a real app, you would update the formData.idNumber here
         toast({
           title: "ID Number Updated",
           description: `ID Number has been corrected to: ${editedIdNumber}`
         });
       } else if (editDialogType === "name") {
-        // In a real app, you would update the formData.fullName here
         toast({
           title: "Name Updated",
           description: `Name has been corrected to: ${editedName}`
         });
       } else if (editDialogType === "dob") {
-        // In a real app, you would update the formData.dob here
         toast({
           title: "Date of Birth Updated",
           description: `Date of Birth has been corrected to: ${editedDob}`
@@ -634,7 +573,6 @@ const KycVerification = ({ userId, onComplete, formData }: KycVerificationProps)
                   </div>
                 )}
                 
-                {/* Extracted data section */}
                 {Object.keys(extractedData).length > 0 && (
                   <div className="mt-4 p-4 bg-blue-50 rounded-md">
                     <div className="flex items-center justify-between mb-2">
@@ -646,7 +584,6 @@ const KycVerification = ({ userId, onComplete, formData }: KycVerificationProps)
                         variant="ghost" 
                         size="sm" 
                         onClick={() => {
-                          // Choose which field to edit based on available data
                           if (extractedData.idNumber) {
                             openEditDialog("idNumber");
                           } else if (extractedData.name) {
@@ -893,7 +830,6 @@ const KycVerification = ({ userId, onComplete, formData }: KycVerificationProps)
         )}
       </CardFooter>
       
-      {/* Image Preview Sheet */}
       <Sheet open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
         <SheetContent className="sm:max-w-lg w-full" side="right">
           <SheetHeader>
@@ -930,7 +866,6 @@ const KycVerification = ({ userId, onComplete, formData }: KycVerificationProps)
         </SheetContent>
       </Sheet>
       
-      {/* Camera Dialog */}
       <Dialog open={isCameraOpen} onOpenChange={(open) => {
         if (!open) handleCameraClose();
         setIsCameraOpen(open);
@@ -965,7 +900,6 @@ const KycVerification = ({ userId, onComplete, formData }: KycVerificationProps)
         </DialogContent>
       </Dialog>
       
-      {/* Edit Data Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
