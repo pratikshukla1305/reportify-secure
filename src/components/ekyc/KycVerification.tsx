@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -47,15 +48,12 @@ const KycVerification = ({ userId, onComplete, formData }: KycVerificationProps)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editedIdNumber, setEditedIdNumber] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
-  const [isEditNameDialogOpen, setIsEditNameDialogOpen] = useState(false);
-  const [editedName, setEditedName] = useState("");
-  const [isEditDobDialogOpen, setIsEditDobDialogOpen] = useState(false);
-  const [editedDob, setEditedDob] = useState("");
-
+  
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const workerRef = useRef<Tesseract.Worker | null>(null);
 
+  // Initialize Tesseract worker
   useEffect(() => {
     const initWorker = async () => {
       const worker = await createWorker('eng');
@@ -72,8 +70,10 @@ const KycVerification = ({ userId, onComplete, formData }: KycVerificationProps)
   }, []);
 
   useEffect(() => {
+    // Only check for existing verification when component mounts
     const checkExistingVerification = () => {
       const existingVerification = getKycVerificationByUserId(userId);
+      // Only set as complete if there's an approved verification
       if (existingVerification && existingVerification.status === 'approved') {
         setIsComplete(true);
       }
@@ -83,6 +83,7 @@ const KycVerification = ({ userId, onComplete, formData }: KycVerificationProps)
   }, [userId]);
 
   useEffect(() => {
+    // If ID front is set, process it for OCR extraction
     if (idFront && formData) {
       extractDataFromAadhaar(idFront);
     }
@@ -105,18 +106,24 @@ const KycVerification = ({ userId, onComplete, formData }: KycVerificationProps)
         description: "We're extracting information from your ID. This may take a moment..."
       });
 
+      // Create an image URL for the file
       const imageUrl = URL.createObjectURL(idImage);
       
+      // Perform OCR on the image
       const result = await workerRef.current.recognize(imageUrl);
       
+      // Clean up the URL
       URL.revokeObjectURL(imageUrl);
       
+      // Process the OCR text
       const ocrText = result.data.text;
       console.log('OCR extracted text:', ocrText);
       
+      // Extract Aadhaar number using regex pattern (12 digits, may be space-separated)
       const aadhaarRegex = /\b(\d{4}\s?\d{4}\s?\d{4})\b/;
       const aadhaarMatch = ocrText.match(aadhaarRegex);
       
+      // Create object to store extracted data
       const extracted: {
         idNumber?: string;
         name?: string;
@@ -125,83 +132,45 @@ const KycVerification = ({ userId, onComplete, formData }: KycVerificationProps)
         gender?: string;
       } = {};
       
+      // If we found an Aadhaar number
       if (aadhaarMatch) {
+        // Remove spaces from Aadhaar number
         const aadhaarNumber = aadhaarMatch[1].replace(/\s/g, '');
         extracted.idNumber = aadhaarNumber;
         
+        // Look for DOB pattern (DD/MM/YYYY)
         const dobRegex = /\b(\d{2}\/\d{2}\/\d{4})\b/;
         const dobMatch = ocrText.match(dobRegex);
-        
-        if (!dobMatch) {
-          const altDobRegex = /\b(\d{4}-\d{2}-\d{2})\b/;
-          const altDobMatch = ocrText.match(altDobRegex);
-          
-          if (altDobMatch) {
-            const parts = altDobMatch[1].split('-');
-            if (parts.length === 3) {
-              extracted.dob = `${parts[2]}/${parts[1]}/${parts[0]}`;
-            }
-          } else {
-            const dashDobRegex = /\b(\d{2}-\d{2}-\d{4})\b/;
-            const dashDobMatch = ocrText.match(dashDobRegex);
-            
-            if (dashDobMatch) {
-              extracted.dob = dashDobMatch[1].replace(/-/g, '/');
-            }
-          }
-        } else {
+        if (dobMatch) {
           extracted.dob = dobMatch[1];
         }
         
-        const lines = ocrText.split('\n');
-        
-        let nameLines = lines.filter(line => 
+        // Look for name - typically appears with "Name:" or after "To,"
+        // This is a simplified approach, a more robust solution would use NER
+        const nameLines = ocrText.split('\n').filter(line => 
           line.includes('Name:') || 
-          line.includes('NAME:') || 
-          line.includes('Name :') || 
-          line.includes('NAME :') ||
-          line.includes('नाम:') ||
-          line.includes('नाम :')
+          (line.length > 10 && /^[A-Z][a-z]+ [A-Z][a-z]+/.test(line))
         );
         
         if (nameLines.length > 0) {
           const nameLine = nameLines[0];
-          if (nameLine.includes(':')) {
-            extracted.name = nameLine.split(':')[1].trim();
-          }
-        } else {
-          const dobLineIndex = lines.findIndex(line => 
-            line.includes('DOB') || 
-            line.includes('Date of Birth') || 
-            line.includes('जन्म तिथि')
-          );
-          
-          if (dobLineIndex > 0 && dobLineIndex < lines.length - 1) {
-            const potentialNameLine = lines[dobLineIndex - 1].trim();
-            
-            if (potentialNameLine.length > 3 && 
-                !/\d/.test(potentialNameLine) && 
-                !potentialNameLine.includes('Aadhaar') &&
-                !potentialNameLine.includes('Government') &&
-                !potentialNameLine.includes('India')) {
-              extracted.name = potentialNameLine;
-            }
+          if (nameLine.includes('Name:')) {
+            extracted.name = nameLine.split('Name:')[1].trim();
+          } else {
+            // Just take the first capitalized words as the name
+            extracted.name = nameLine.trim();
           }
         }
         
-        const allCapsNameRegex = /\b[A-Z]{2,}(?:\s+[A-Z]{2,}){1,3}\b/;
-        const allCapsMatches = ocrText.match(allCapsNameRegex);
-        
-        if (allCapsMatches && allCapsMatches[0]) {
-          extracted.name = allCapsMatches[0];
-        }
-        
+        // Extract gender if present
         if (ocrText.includes('MALE') || ocrText.includes('Male')) {
           extracted.gender = 'Male';
         } else if (ocrText.includes('FEMALE') || ocrText.includes('Female')) {
           extracted.gender = 'Female';
         }
         
+        // Extract address - usually multi-line and after "Address:"
+        // This is simplified; a more robust solution would use NER or layout analysis
         const addressIndex = ocrText.indexOf('Address:');
         if (addressIndex > -1) {
           const addressText = ocrText.substring(addressIndex + 8);
@@ -209,29 +178,17 @@ const KycVerification = ({ userId, onComplete, formData }: KycVerificationProps)
           if (endOfAddress > -1) {
             extracted.address = addressText.substring(0, endOfAddress).trim();
           } else {
-            extracted.address = addressText.substring(0, 100).trim();
+            extracted.address = addressText.substring(0, 100).trim(); // Take first 100 chars
           }
         }
         
+        // Set the extracted data
         setExtractedData(extracted);
         
+        // If extracted ID is different from form data, show edit dialog
         if (extracted.idNumber && extracted.idNumber !== formData?.idNumber) {
           setEditedIdNumber(extracted.idNumber);
           setIsEditDialogOpen(true);
-        }
-        
-        if (extracted.name && extracted.name !== formData?.fullName) {
-          setEditedName(extracted.name);
-          setTimeout(() => {
-            setIsEditNameDialogOpen(true);
-          }, 500);
-        }
-        
-        if (extracted.dob && extracted.dob !== formData?.dob) {
-          setEditedDob(extracted.dob);
-          setTimeout(() => {
-            setIsEditDobDialogOpen(true);
-          }, 1000);
         }
         
         toast({
@@ -284,6 +241,7 @@ const KycVerification = ({ userId, onComplete, formData }: KycVerificationProps)
     setCaptureType(type);
     setIsCameraOpen(true);
     
+    // Start camera when dialog opens
     setTimeout(() => {
       startCamera();
     }, 100);
@@ -320,17 +278,22 @@ const KycVerification = ({ userId, onComplete, formData }: KycVerificationProps)
       const video = videoRef.current;
       const canvas = canvasRef.current;
       
+      // Set canvas dimensions to match video
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
       
+      // Draw video frame to canvas
       const context = canvas.getContext('2d');
       if (context) {
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
         
+        // Convert canvas to blob
         canvas.toBlob((blob) => {
           if (blob) {
+            // Create File object from blob
             const file = new File([blob], `${captureType}-${Date.now()}.jpg`, { type: 'image/jpeg' });
             
+            // Set the appropriate file based on capture type
             if (captureType === 'idFront') setIdFront(file);
             else if (captureType === 'idBack') setIdBack(file);
             else if (captureType === 'selfie') setSelfie(file);
@@ -343,6 +306,7 @@ const KycVerification = ({ userId, onComplete, formData }: KycVerificationProps)
         }, 'image/jpeg', 0.95);
       }
       
+      // Close camera after capture
       setIsCameraOpen(false);
       stopCamera();
     }
@@ -354,6 +318,7 @@ const KycVerification = ({ userId, onComplete, formData }: KycVerificationProps)
   };
 
   const handleSubmit = () => {
+    // Ensure all required documents are uploaded
     if (!idFront || !idBack || !selfie) {
       toast({
         title: "Missing Documents",
@@ -363,14 +328,20 @@ const KycVerification = ({ userId, onComplete, formData }: KycVerificationProps)
       return;
     }
     
+    // Simulate submitting verification documents
     setIsSubmitting(true);
     
     setTimeout(() => {
+      // In a real application, we would upload these files to storage
+      // and save the URLs in the database
+      
+      // Add verification to our shared data store
       if (formData) {
         addKycVerification({
           userId,
           name: formData.fullName,
           email: formData.email,
+          // Create object URLs for demo purposes
           document: idFront ? URL.createObjectURL(idFront) : '',
           photo: selfie ? URL.createObjectURL(selfie) : '',
           status: 'pending',
@@ -386,6 +357,7 @@ const KycVerification = ({ userId, onComplete, formData }: KycVerificationProps)
         description: "Your identity verification has been submitted successfully.",
       });
       
+      // Call onComplete if provided
       if (onComplete) {
         onComplete();
       }
@@ -393,7 +365,9 @@ const KycVerification = ({ userId, onComplete, formData }: KycVerificationProps)
   };
 
   const handleEditIdNumber = () => {
+    // Update formData with corrected ID number
     if (formData) {
+      // In a real app, you would update the formData here
       toast({
         title: "ID Number Updated",
         description: `ID Number has been corrected to: ${editedIdNumber}`
@@ -401,27 +375,7 @@ const KycVerification = ({ userId, onComplete, formData }: KycVerificationProps)
     }
     setIsEditDialogOpen(false);
   };
-
-  const handleEditName = () => {
-    if (formData) {
-      toast({
-        title: "Name Updated",
-        description: `Name has been corrected to: ${editedName}`
-      });
-    }
-    setIsEditNameDialogOpen(false);
-  };
-
-  const handleEditDob = () => {
-    if (formData) {
-      toast({
-        title: "Date of Birth Updated",
-        description: `Date of Birth has been corrected to: ${editedDob}`
-      });
-    }
-    setIsEditDobDialogOpen(false);
-  };
-
+  
   return (
     <Card className="max-w-lg mx-auto">
       <CardHeader>
@@ -499,6 +453,7 @@ const KycVerification = ({ userId, onComplete, formData }: KycVerificationProps)
                   </div>
                 )}
                 
+                {/* Extracted data section */}
                 {Object.keys(extractedData).length > 0 && (
                   <div className="mt-4 p-4 bg-blue-50 rounded-md">
                     <div className="flex items-center justify-between mb-2">
@@ -511,8 +466,6 @@ const KycVerification = ({ userId, onComplete, formData }: KycVerificationProps)
                         size="sm" 
                         onClick={() => {
                           setEditedIdNumber(extractedData.idNumber || "");
-                          setEditedName(extractedData.name || "");
-                          setEditedDob(extractedData.dob || "");
                           setIsEditDialogOpen(true);
                         }}
                       >
@@ -723,6 +676,7 @@ const KycVerification = ({ userId, onComplete, formData }: KycVerificationProps)
         )}
       </CardFooter>
 
+      {/* Camera Sheet for capturing photos */}
       <Sheet open={isCameraOpen} onOpenChange={(open) => {
         if (!open) handleCameraClose();
       }}>
@@ -745,6 +699,7 @@ const KycVerification = ({ userId, onComplete, formData }: KycVerificationProps)
               className="w-full max-h-[60vh] object-cover rounded-lg bg-black"
             />
             
+            {/* Overlay guide for document positioning */}
             {captureType !== "selfie" && (
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                 <div className="border-2 border-dashed border-white w-4/5 h-3/5 rounded-md opacity-70"></div>
@@ -771,6 +726,7 @@ const KycVerification = ({ userId, onComplete, formData }: KycVerificationProps)
         </SheetContent>
       </Sheet>
 
+      {/* Fullscreen preview sheet */}
       <Sheet open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
         <SheetContent className="w-full sm:max-w-full">
           <SheetHeader>
@@ -808,6 +764,7 @@ const KycVerification = ({ userId, onComplete, formData }: KycVerificationProps)
         </SheetContent>
       </Sheet>
 
+      {/* Edit extracted data dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -838,72 +795,6 @@ const KycVerification = ({ userId, onComplete, formData }: KycVerificationProps)
               Cancel
             </Button>
             <Button onClick={handleEditIdNumber}>
-              Save Changes
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={isEditNameDialogOpen} onOpenChange={setIsEditNameDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Edit Extracted Name</DialogTitle>
-          </DialogHeader>
-          <div className="py-4">
-            <div className="flex items-center space-x-2 mb-4">
-              <AlertCircle className="h-5 w-5 text-yellow-500" />
-              <p className="text-sm text-muted-foreground">
-                Please verify the extracted name and make corrections if needed.
-              </p>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="fullName">Full Name</Label>
-              <Input
-                id="fullName"
-                value={editedName}
-                onChange={(e) => setEditedName(e.target.value)}
-                placeholder="Full name as on Aadhaar"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEditNameDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleEditName}>
-              Save Changes
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={isEditDobDialogOpen} onOpenChange={setIsEditDobDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Edit Extracted Date of Birth</DialogTitle>
-          </DialogHeader>
-          <div className="py-4">
-            <div className="flex items-center space-x-2 mb-4">
-              <AlertCircle className="h-5 w-5 text-yellow-500" />
-              <p className="text-sm text-muted-foreground">
-                Please verify the extracted date of birth and make corrections if needed.
-              </p>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="dob">Date of Birth (DD/MM/YYYY)</Label>
-              <Input
-                id="dob"
-                value={editedDob}
-                onChange={(e) => setEditedDob(e.target.value)}
-                placeholder="DD/MM/YYYY"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEditDobDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleEditDob}>
               Save Changes
             </Button>
           </DialogFooter>
