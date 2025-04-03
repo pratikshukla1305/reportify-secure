@@ -7,6 +7,7 @@ import { Shield, User, Mail, Lock, UserCog } from 'lucide-react';
 import AuthButton from '@/components/AuthButton';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
 
 const SignIn = () => {
   const [email, setEmail] = useState('');
@@ -16,22 +17,38 @@ const SignIn = () => {
   const { signIn, user } = useAuth();
   const navigate = useNavigate();
   
+  console.log("SignIn page loaded, user state:", user ? "Logged in" : "Not logged in");
+  
   // Redirect if user is already logged in
   useEffect(() => {
     if (user) {
+      console.log("User already logged in, redirecting to dashboard");
       navigate('/dashboard');
     }
   }, [user, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log("Sign in attempt with email:", email);
+    
+    if (!email || !password) {
+      toast.error("Please fill in all fields");
+      return;
+    }
+    
     setIsLoading(true);
     
     try {
       const { error } = await signIn(email, password);
       if (!error) {
+        console.log("Sign in successful, redirecting to dashboard");
+        toast.success("Sign in successful!");
         navigate('/dashboard');
+      } else {
+        console.error("Sign in error:", error.message);
       }
+    } catch (err) {
+      console.error("Unexpected error during sign in:", err);
     } finally {
       setIsLoading(false);
     }

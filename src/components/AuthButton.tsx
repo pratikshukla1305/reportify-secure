@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 
 type AuthButtonProps = {
   className?: string;
@@ -15,26 +16,34 @@ type AuthButtonProps = {
 const AuthButton = ({ className }: AuthButtonProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState<string | null>(null);
-  const { toast } = useToast();
+  const { toast: uiToast } = useToast();
   const navigate = useNavigate();
 
   const handleGoogleLogin = async () => {
     setIsLoading('google');
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
+      console.log('Attempting Google OAuth login');
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: `${window.location.origin}/dashboard`,
         },
       });
       
-      if (error) throw error;
+      if (error) {
+        console.error('Google OAuth error:', error);
+        throw error;
+      }
+      
+      console.log('Google OAuth initiated:', data);
     } catch (error: any) {
-      toast({
+      console.error('Google login error:', error.message);
+      uiToast({
         title: "Error signing in with Google",
         description: error.message,
         variant: "destructive",
       });
+      toast.error(`Error signing in with Google: ${error.message}`);
     } finally {
       setIsLoading(null);
       setIsOpen(false);
@@ -44,20 +53,28 @@ const AuthButton = ({ className }: AuthButtonProps) => {
   const handleGithubLogin = async () => {
     setIsLoading('github');
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
+      console.log('Attempting GitHub OAuth login');
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'github',
         options: {
           redirectTo: `${window.location.origin}/dashboard`,
         },
       });
       
-      if (error) throw error;
+      if (error) {
+        console.error('GitHub OAuth error:', error);
+        throw error;
+      }
+      
+      console.log('GitHub OAuth initiated:', data);
     } catch (error: any) {
-      toast({
+      console.error('GitHub login error:', error.message);
+      uiToast({
         title: "Error signing in with GitHub",
         description: error.message,
         variant: "destructive",
       });
+      toast.error(`Error signing in with GitHub: ${error.message}`);
     } finally {
       setIsLoading(null);
       setIsOpen(false);
@@ -68,7 +85,8 @@ const AuthButton = ({ className }: AuthButtonProps) => {
     setIsLoading('metamask');
     // This is a placeholder for MetaMask integration
     // In a real implementation, you would integrate with Web3 and MetaMask
-    toast({
+    toast.info("MetaMask login is not yet implemented");
+    uiToast({
       title: "MetaMask Integration",
       description: "MetaMask login functionality coming soon!",
     });

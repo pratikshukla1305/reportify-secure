@@ -7,6 +7,7 @@ import { Shield, User, Mail, Lock, UserPlus, CheckCircle, UserCog } from 'lucide
 import AuthButton from '@/components/AuthButton';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
 
 const GetStarted = () => {
   const [fullName, setFullName] = useState('');
@@ -17,18 +18,33 @@ const GetStarted = () => {
   const { signUp, user } = useAuth();
   const navigate = useNavigate();
   
+  console.log("GetStarted page loaded, user state:", user ? "Logged in" : "Not logged in");
+  
   // Redirect if user is already logged in
   useEffect(() => {
     if (user) {
+      console.log("User already logged in, redirecting to dashboard");
       navigate('/dashboard');
     }
   }, [user, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log("Sign up attempt with email:", email);
+    
+    if (!fullName || !email || !password) {
+      toast.error("Please fill in all fields");
+      return;
+    }
     
     if (!agreeToTerms) {
-      return; // Don't proceed if user hasn't agreed to terms
+      toast.error("Please agree to the terms of service");
+      return;
+    }
+    
+    if (password.length < 6) {
+      toast.error("Password must be at least 6 characters long");
+      return;
     }
     
     setIsLoading(true);
@@ -36,9 +52,14 @@ const GetStarted = () => {
     try {
       const { error } = await signUp(email, password, fullName);
       if (!error) {
-        // Redirect to sign-in page after successful sign-up
+        console.log("Sign up successful, redirecting to sign in");
+        toast.success("Account created successfully! Please sign in.");
         navigate('/signin');
+      } else {
+        console.error("Sign up error:", error.message);
       }
+    } catch (err) {
+      console.error("Unexpected error during sign up:", err);
     } finally {
       setIsLoading(false);
     }
