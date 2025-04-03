@@ -5,6 +5,9 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { v4 as uuidv4 } from 'uuid';
 
 type UploadCardProps = {
   className?: string;
@@ -12,6 +15,7 @@ type UploadCardProps = {
 
 const UploadCard = ({ className }: UploadCardProps) => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [files, setFiles] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
   const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
@@ -108,14 +112,121 @@ const UploadCard = ({ className }: UploadCardProps) => {
     }
   };
   
-  const handleContinueToReport = () => {
-    // Store files in sessionStorage for access in the report pages
-    if (files.length > 0) {
-      // Store preview URLs in sessionStorage to use in report
-      sessionStorage.setItem('uploadedImages', JSON.stringify(previews));
-      navigate("/continue-report");
-    } else {
+  const uploadFilesToSupabase = async (): Promise<string[]> => {
+    if (!user) {
+      toast.error("You must be logged in to upload files");
+      return [];
+    }
+    
+    if (files.length === 0) return [];
+    
+    const reportId = uuidv4();
+    const uploadedUrls: string[] = [];
+    
+    // Check if evidence bucket exists
+    const { data: buckets } = await supabase.storage.listBuckets();
+    const evidenceBucketExists = buckets?.some(bucket => bucket.name === 'evidence');
+    
+    if (!evidenceBucketExists) {
+      // Create the bucket if it doesn't exist
+      await supabase.storage.createBucket('evidence', {
+        public: false,
+      });
+    }
+    
+    // Upload each file
+    for (const [index, file] of files.entries()) {
+      try {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${reportId}-${index}.${fileExt}`;
+        const filePath = `${user.id}/${fileName}`;
+        
+        const { error } = await supabase.storage
+          .from('evidence')
+          .upload(filePath, file, {
+            cacheControl: '3600',
+            upsert: false
+          });
+          
+        if (error) throw error;
+        
+        // Get the public URL
+        const { data } = supabase.storage
+          .from('evidence')
+          .getPublicUrl(filePath);
+          
+        uploadedUrls.push(data.publicUrl);
+        
+      } catch (error: any) {
+        console.error('Error uploading file:', error);
+        toast.error(`Error uploading ${file.name}: ${error.message}`);
+      }
+    }
+    
+    return uploadedUrls;
+  };
+  
+  const handleContinueToReport = async () => {
+    if (files.length === 0) {
       toast.error("Please upload at least one file before continuing");
+      return;
+    }
+    
+    if (!user) {
+      toast.error("You must be logged in to continue");
+      navigate("/signin");
+      return;
+    }
+    
+    setIsUploading(true);
+    
+    try {
+      // Upload files to Supabase storage
+      const uploadedUrls = await uploadFilesToSupabase();
+      
+      if (uploadedUrls.length === 0) {
+        toast.error("Failed to upload files. Please try again.");
+        return;
+      }
+      
+      // Store preview URLs in sessionStorage to use in report
+      sessionStorage.setItem('uploadedImages', JSON.stringify(uploadedUrls));
+      
+      // Create a draft report
+      const reportId = uuidv4();
+      const { error } = await supabase
+        .from('crime_reports')
+        .insert({
+          id: reportId,
+          user_id: user.id,
+          title: "Draft Report",
+          status: "draft"
+        });
+        
+      if (error) throw error;
+      
+      // Insert evidence records
+      for (const url of uploadedUrls) {
+        const { error: evidenceError } = await supabase
+          .from('evidence')
+          .insert({
+            report_id: reportId,
+            user_id: user.id,
+            storage_path: url,
+            type: 'image'
+          });
+          
+        if (evidenceError) throw evidenceError;
+      }
+      
+      // Navigate to continue report page
+      navigate(`/continue-report?id=${reportId}`);
+      
+    } catch (error: any) {
+      console.error('Error creating report:', error);
+      toast.error(`Error: ${error.message}`);
+    } finally {
+      setIsUploading(false);
     }
   };
 

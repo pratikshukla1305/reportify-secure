@@ -1,13 +1,49 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
 import { Shield, User, Mail, Lock, UserPlus, CheckCircle, UserCog } from 'lucide-react';
 import AuthButton from '@/components/AuthButton';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 
 const GetStarted = () => {
+  const [fullName, setFullName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [agreeToTerms, setAgreeToTerms] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const { signUp, user } = useAuth();
+  const navigate = useNavigate();
+  
+  // Redirect if user is already logged in
+  useEffect(() => {
+    if (user) {
+      navigate('/dashboard');
+    }
+  }, [user, navigate]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!agreeToTerms) {
+      return; // Don't proceed if user hasn't agreed to terms
+    }
+    
+    setIsLoading(true);
+    
+    try {
+      const { error } = await signUp(email, password, fullName);
+      if (!error) {
+        // Redirect to sign-in page after successful sign-up
+        navigate('/signin');
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-white">
       <Navbar />
@@ -26,7 +62,7 @@ const GetStarted = () => {
               </div>
               
               <div className="glass-card p-8 max-w-md mx-auto lg:mx-0">
-                <div className="space-y-6">
+                <form onSubmit={handleSubmit} className="space-y-6">
                   <div className="flex flex-col">
                     <label htmlFor="name" className="text-sm font-medium text-gray-700 mb-1">Full Name</label>
                     <div className="relative">
@@ -36,8 +72,11 @@ const GetStarted = () => {
                       <input
                         type="text"
                         id="name"
+                        value={fullName}
+                        onChange={(e) => setFullName(e.target.value)}
                         className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-shield-blue focus:border-shield-blue"
                         placeholder="John Doe"
+                        required
                       />
                     </div>
                   </div>
@@ -51,8 +90,11 @@ const GetStarted = () => {
                       <input
                         type="email"
                         id="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
                         className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-shield-blue focus:border-shield-blue"
                         placeholder="you@example.com"
+                        required
                       />
                     </div>
                   </div>
@@ -66,8 +108,12 @@ const GetStarted = () => {
                       <input
                         type="password"
                         id="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
                         className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-shield-blue focus:border-shield-blue"
                         placeholder="••••••••"
+                        required
+                        minLength={6}
                       />
                     </div>
                   </div>
@@ -77,15 +123,22 @@ const GetStarted = () => {
                       id="terms"
                       name="terms"
                       type="checkbox"
+                      checked={agreeToTerms}
+                      onChange={(e) => setAgreeToTerms(e.target.checked)}
                       className="h-4 w-4 text-shield-blue focus:ring-shield-blue border-gray-300 rounded"
+                      required
                     />
                     <label htmlFor="terms" className="ml-2 block text-sm text-gray-700">
                       I agree to the <a href="#" className="text-shield-blue hover:underline">Terms of Service</a> and <a href="#" className="text-shield-blue hover:underline">Privacy Policy</a>
                     </label>
                   </div>
                   
-                  <Button className="w-full bg-shield-blue text-white hover:bg-blue-600 transition-all">
-                    Create Account
+                  <Button 
+                    type="submit" 
+                    className="w-full bg-shield-blue text-white hover:bg-blue-600 transition-all"
+                    disabled={isLoading || !agreeToTerms}
+                  >
+                    {isLoading ? "Creating Account..." : "Create Account"}
                   </Button>
                   
                   <div className="relative">
@@ -103,9 +156,9 @@ const GetStarted = () => {
                   
                   <div className="text-center text-sm text-gray-600">
                     Already have an account?{' '}
-                    <a href="/signin" className="font-medium text-shield-blue hover:text-blue-600">
+                    <Link to="/signin" className="font-medium text-shield-blue hover:text-blue-600">
                       Sign In
-                    </a>
+                    </Link>
                   </div>
                   
                   <div className="pt-4 border-t border-gray-200">
@@ -119,7 +172,7 @@ const GetStarted = () => {
                       </Link>
                     </div>
                   </div>
-                </div>
+                </form>
               </div>
             </div>
             

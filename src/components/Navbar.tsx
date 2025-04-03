@@ -1,11 +1,12 @@
 
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { Shield, Menu, X, MapPin, AlertCircle, Megaphone } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Shield, Menu, X, MapPin, AlertCircle, Megaphone, LogOut, User as UserIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import SOSButton from '@/components/sos/SOSButton';
 import SOSModal from '@/components/sos/SOSModal';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -17,14 +18,22 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@/components/ui/avatar";
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showSOSModal, setShowSOSModal] = useState(false);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -62,6 +71,22 @@ const Navbar = () => {
       setUserLocation(null);
       setShowSOSModal(true);
     }
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/');
+  };
+
+  const getUserInitials = () => {
+    if (!user || !user.user_metadata || !user.user_metadata.full_name) {
+      return user?.email?.charAt(0).toUpperCase() || 'U';
+    }
+    
+    const fullName = user.user_metadata.full_name;
+    const names = fullName.split(' ');
+    if (names.length === 1) return names[0].charAt(0).toUpperCase();
+    return `${names[0].charAt(0)}${names[names.length - 1].charAt(0)}`.toUpperCase();
   };
 
   return (
@@ -154,19 +179,66 @@ const Navbar = () => {
             {/* SOS Button in Navbar */}
             <SOSButton onClick={handleSOSClick} className="scale-90" />
             
-            <Link to="/signin" className="text-sm font-medium">
-              <Button 
-                variant="outline" 
-                className="border-shield-blue text-shield-blue hover:bg-shield-blue hover:text-white transition-all"
-              >
-                Sign In
-              </Button>
-            </Link>
-            <Link to="/get-started" className="text-sm font-medium">
-              <Button className="bg-shield-blue text-white hover:bg-blue-600 transition-all">
-                Get Started
-              </Button>
-            </Link>
+            {user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={user.user_metadata?.avatar_url} alt={user.user_metadata?.full_name || user.email} />
+                      <AvatarFallback>{getUserInitials()}</AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56" align="end" forceMount>
+                  <div className="flex items-center justify-start gap-2 p-2">
+                    <div className="flex flex-col space-y-1 leading-none">
+                      {user.user_metadata?.full_name && (
+                        <p className="font-medium">{user.user_metadata.full_name}</p>
+                      )}
+                      {user.email && (
+                        <p className="w-[200px] truncate text-sm text-muted-foreground">
+                          {user.email}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link to="/dashboard">Dashboard</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/profile">Profile</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/my-reports">My Reports</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem 
+                    className="text-red-600 cursor-pointer"
+                    onClick={handleSignOut}
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Log out</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <>
+                <Link to="/signin" className="text-sm font-medium">
+                  <Button 
+                    variant="outline" 
+                    className="border-shield-blue text-shield-blue hover:bg-shield-blue hover:text-white transition-all"
+                  >
+                    Sign In
+                  </Button>
+                </Link>
+                <Link to="/get-started" className="text-sm font-medium">
+                  <Button className="bg-shield-blue text-white hover:bg-blue-600 transition-all">
+                    Get Started
+                  </Button>
+                </Link>
+              </>
+            )}
           </nav>
 
           {/* Mobile Menu Button */}
@@ -190,6 +262,19 @@ const Navbar = () => {
       {isMobileMenuOpen && (
         <div className="md:hidden glass absolute top-full left-0 right-0 border-t border-gray-100 animate-fade-in">
           <div className="px-4 py-5 space-y-4">
+            {user && (
+              <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-md mb-2">
+                <Avatar className="h-10 w-10">
+                  <AvatarImage src={user.user_metadata?.avatar_url} alt={user.user_metadata?.full_name || user.email} />
+                  <AvatarFallback>{getUserInitials()}</AvatarFallback>
+                </Avatar>
+                <div>
+                  <p className="font-medium text-sm">{user.user_metadata?.full_name || 'User'}</p>
+                  <p className="text-xs text-gray-500 truncate max-w-[200px]">{user.email}</p>
+                </div>
+              </div>
+            )}
+            
             <Link 
               to="/home" 
               className="block text-base font-medium text-gray-700 hover:text-shield-blue transition-colors"
@@ -256,23 +341,59 @@ const Navbar = () => {
               Help Us
             </Link>
             
-            <div className="pt-4 space-y-3">
-              <Link to="/signin" className="block w-full" onClick={() => setIsMobileMenuOpen(false)}>
-                <Button
-                  variant="outline"
-                  className="w-full justify-center border-shield-blue text-shield-blue hover:bg-shield-blue hover:text-white transition-all"
+            {user ? (
+              <div className="pt-4 space-y-3 border-t border-gray-100">
+                <Link 
+                  to="/dashboard" 
+                  className="block w-full text-base font-medium text-gray-700 hover:text-shield-blue transition-colors"
+                  onClick={() => setIsMobileMenuOpen(false)}
                 >
-                  Sign In
-                </Button>
-              </Link>
-              <Link to="/get-started" className="block w-full" onClick={() => setIsMobileMenuOpen(false)}>
-                <Button 
-                  className="w-full justify-center bg-shield-blue text-white hover:bg-blue-600 transition-all"
+                  Dashboard
+                </Link>
+                <Link 
+                  to="/profile" 
+                  className="block w-full text-base font-medium text-gray-700 hover:text-shield-blue transition-colors"
+                  onClick={() => setIsMobileMenuOpen(false)}
                 >
-                  Get Started
-                </Button>
-              </Link>
-            </div>
+                  Profile
+                </Link>
+                <Link 
+                  to="/my-reports" 
+                  className="block w-full text-base font-medium text-gray-700 hover:text-shield-blue transition-colors"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  My Reports
+                </Link>
+                <button 
+                  onClick={() => {
+                    handleSignOut();
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="flex items-center w-full py-2 text-base font-medium text-red-600 hover:text-red-700 transition-colors"
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Log out
+                </button>
+              </div>
+            ) : (
+              <div className="pt-4 space-y-3">
+                <Link to="/signin" className="block w-full" onClick={() => setIsMobileMenuOpen(false)}>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-center border-shield-blue text-shield-blue hover:bg-shield-blue hover:text-white transition-all"
+                  >
+                    Sign In
+                  </Button>
+                </Link>
+                <Link to="/get-started" className="block w-full" onClick={() => setIsMobileMenuOpen(false)}>
+                  <Button 
+                    className="w-full justify-center bg-shield-blue text-white hover:bg-blue-600 transition-all"
+                  >
+                    Get Started
+                  </Button>
+                </Link>
+              </div>
+            )}
           </div>
         </div>
       )}

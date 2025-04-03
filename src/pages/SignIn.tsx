@@ -1,13 +1,42 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
 import { Shield, User, Mail, Lock, UserCog } from 'lucide-react';
 import AuthButton from '@/components/AuthButton';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 
 const SignIn = () => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
+  const { signIn, user } = useAuth();
+  const navigate = useNavigate();
+  
+  // Redirect if user is already logged in
+  useEffect(() => {
+    if (user) {
+      navigate('/dashboard');
+    }
+  }, [user, navigate]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    
+    try {
+      const { error } = await signIn(email, password);
+      if (!error) {
+        navigate('/dashboard');
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-white">
       <Navbar />
@@ -49,7 +78,7 @@ const SignIn = () => {
               </div>
               
               <div className="glass-card p-8 max-w-md mx-auto lg:mx-0">
-                <div className="space-y-6">
+                <form onSubmit={handleSubmit} className="space-y-6">
                   <div className="flex flex-col">
                     <label htmlFor="email" className="text-sm font-medium text-gray-700 mb-1">Email</label>
                     <div className="relative">
@@ -59,8 +88,11 @@ const SignIn = () => {
                       <input
                         type="email"
                         id="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
                         className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-shield-blue focus:border-shield-blue"
                         placeholder="you@example.com"
+                        required
                       />
                     </div>
                   </div>
@@ -74,8 +106,11 @@ const SignIn = () => {
                       <input
                         type="password"
                         id="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
                         className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-shield-blue focus:border-shield-blue"
                         placeholder="••••••••"
+                        required
                       />
                     </div>
                   </div>
@@ -86,6 +121,8 @@ const SignIn = () => {
                         id="remember-me"
                         name="remember-me"
                         type="checkbox"
+                        checked={rememberMe}
+                        onChange={(e) => setRememberMe(e.target.checked)}
                         className="h-4 w-4 text-shield-blue focus:ring-shield-blue border-gray-300 rounded"
                       />
                       <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
@@ -100,8 +137,12 @@ const SignIn = () => {
                     </div>
                   </div>
                   
-                  <Button className="w-full bg-shield-blue text-white hover:bg-blue-600 transition-all">
-                    Sign In
+                  <Button 
+                    type="submit" 
+                    className="w-full bg-shield-blue text-white hover:bg-blue-600 transition-all"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? "Signing in..." : "Sign In"}
                   </Button>
                   
                   <div className="relative">
@@ -119,9 +160,9 @@ const SignIn = () => {
                   
                   <div className="text-center text-sm text-gray-600">
                     Don't have an account?{' '}
-                    <a href="/get-started" className="font-medium text-shield-blue hover:text-blue-600">
+                    <Link to="/get-started" className="font-medium text-shield-blue hover:text-blue-600">
                       Get Started
-                    </a>
+                    </Link>
                   </div>
                   
                   <div className="pt-4 border-t border-gray-200">
@@ -135,7 +176,7 @@ const SignIn = () => {
                       </Link>
                     </div>
                   </div>
-                </div>
+                </form>
               </div>
             </div>
           </div>

@@ -9,7 +9,110 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      crime_reports: {
+        Row: {
+          description: string | null
+          id: string
+          incident_date: string | null
+          is_anonymous: boolean
+          location: string | null
+          report_date: string
+          status: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          description?: string | null
+          id?: string
+          incident_date?: string | null
+          is_anonymous?: boolean
+          location?: string | null
+          report_date?: string
+          status?: string
+          title: string
+          user_id: string
+        }
+        Update: {
+          description?: string | null
+          id?: string
+          incident_date?: string | null
+          is_anonymous?: boolean
+          location?: string | null
+          report_date?: string
+          status?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      evidence: {
+        Row: {
+          description: string | null
+          id: string
+          report_id: string
+          storage_path: string | null
+          title: string | null
+          type: string | null
+          uploaded_at: string
+          user_id: string
+        }
+        Insert: {
+          description?: string | null
+          id?: string
+          report_id: string
+          storage_path?: string | null
+          title?: string | null
+          type?: string | null
+          uploaded_at?: string
+          user_id: string
+        }
+        Update: {
+          description?: string | null
+          id?: string
+          report_id?: string
+          storage_path?: string | null
+          title?: string | null
+          type?: string | null
+          uploaded_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "evidence_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "crime_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          email: string
+          full_name: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          email: string
+          full_name?: string | null
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          email?: string
+          full_name?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
