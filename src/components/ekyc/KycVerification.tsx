@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -54,28 +53,24 @@ const KycVerification = ({ userId, onComplete, formData }: KycVerificationProps)
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const workerRef = useRef<Tesseract.Worker | null>(null);
+  const workerRef = useRef<any>(null);
 
   // Initialize Tesseract worker with improved configuration
   useEffect(() => {
     const initWorker = async () => {
-      // Initialize worker with multiple languages for better recognition
+      // Initialize worker with English language for better recognition
       try {
-        const worker = await createWorker({
-          logger: m => console.log(m),
-          langPath: 'https://tessdata.projectnaptha.com/4.0.0',
-        });
+        const worker = await createWorker();
+        await worker.load();
         await worker.loadLanguage('eng');
         await worker.initialize('eng');
-        // Set tesseract parameters for better text detection
+        
+        // Set parameters for better OCR performance
         await worker.setParameters({
           tessedit_char_whitelist: '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz/- ',
-          // Improve OCR quality at the expense of speed
-          tessjs_create_hocr: '0',
-          tessjs_create_tsv: '0',
           tessedit_ocr_engine_mode: '1', // Use LSTM only
-          tessjs_create_pdf: '0',
         });
+        
         workerRef.current = worker;
         
         console.log("Tesseract worker initialized successfully");
@@ -162,7 +157,7 @@ const KycVerification = ({ userId, onComplete, formData }: KycVerificationProps)
         const data = imageData.data;
         
         // Apply simple thresholding to improve text contrast
-        for (let i = 0; i < data.length; i += 4) {
+        for (let i = 0; < data.length; i += 4) {
           const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
           const threshold = 127;
           const newValue = avg > threshold ? 255 : 0;
@@ -176,7 +171,7 @@ const KycVerification = ({ userId, onComplete, formData }: KycVerificationProps)
         
         // Perform OCR on the enhanced image
         try {
-          const result = await workerRef.current!.recognize(enhancedImage);
+          const result = await workerRef.current.recognize(enhancedImage);
           
           // Process the OCR text
           const ocrText = result.data.text;
@@ -864,185 +859,3 @@ const KycVerification = ({ userId, onComplete, formData }: KycVerificationProps)
         {!isComplete ? (
           <Button onClick={handleSubmit} disabled={isSubmitting || !idFront || !idBack || !selfie}>
             {isSubmitting ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Submitting...
-              </>
-            ) : (
-              "Submit Verification"
-            )}
-          </Button>
-        ) : (
-          <Button onClick={onComplete || (() => {})}>
-            Done
-          </Button>
-        )}
-      </CardFooter>
-
-      {/* Camera Sheet for capturing photos */}
-      <Sheet open={isCameraOpen} onOpenChange={(open) => {
-        if (!open) handleCameraClose();
-      }}>
-        <SheetContent className="w-full sm:max-w-full flex flex-col">
-          <SheetHeader>
-            <SheetTitle>
-              Capture {captureType === "idFront" ? "Aadhaar Front" : 
-                     captureType === "idBack" ? "Aadhaar Back" : "Selfie"}
-            </SheetTitle>
-            <SheetDescription>
-              Position your {captureType === "selfie" ? "face" : "document"} within the frame and take a photo
-            </SheetDescription>
-          </SheetHeader>
-          
-          <div className="flex-grow flex flex-col items-center justify-center my-6 relative">
-            <video 
-              ref={videoRef} 
-              autoPlay 
-              playsInline
-              className="w-full max-h-[60vh] object-cover rounded-lg bg-black"
-            />
-            
-            {/* Overlay guide for document positioning */}
-            {captureType !== "selfie" && (
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div className="border-2 border-dashed border-white w-4/5 h-3/5 rounded-md opacity-70"></div>
-              </div>
-            )}
-            
-            <canvas ref={canvasRef} className="hidden" />
-          </div>
-          
-          <div className="flex justify-center space-x-4">
-            <Button 
-              variant="outline" 
-              onClick={handleCameraClose}
-            >
-              Cancel
-            </Button>
-            <Button 
-              variant="default"
-              onClick={capturePhoto}
-            >
-              Capture
-            </Button>
-          </div>
-        </SheetContent>
-      </Sheet>
-
-      {/* Fullscreen preview sheet */}
-      <Sheet open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
-        <SheetContent className="w-full sm:max-w-full">
-          <SheetHeader>
-            <SheetTitle>
-              {previewType === "idFront" ? "Aadhaar Front" : 
-               previewType === "idBack" ? "Aadhaar Back" : "Selfie"} Preview
-            </SheetTitle>
-            <SheetDescription>
-              View your uploaded document in full size
-            </SheetDescription>
-          </SheetHeader>
-          <div className="mt-6 flex justify-center">
-            {previewType === "idFront" && idFront && (
-              <img 
-                src={URL.createObjectURL(idFront)} 
-                alt="ID Front" 
-                className="max-h-[80vh] object-contain"
-              />
-            )}
-            {previewType === "idBack" && idBack && (
-              <img 
-                src={URL.createObjectURL(idBack)} 
-                alt="ID Back" 
-                className="max-h-[80vh] object-contain"
-              />
-            )}
-            {previewType === "selfie" && selfie && (
-              <img 
-                src={URL.createObjectURL(selfie)} 
-                alt="Selfie" 
-                className="max-h-[80vh] object-contain"
-              />
-            )}
-          </div>
-        </SheetContent>
-      </Sheet>
-
-      {/* Edit extracted data dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>
-              {editDialogType === "idNumber" 
-                ? "Edit Extracted Aadhaar Number" 
-                : editDialogType === "name" 
-                ? "Edit Extracted Name" 
-                : "Edit Extracted Date of Birth"}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="py-4">
-            <div className="flex items-center space-x-2 mb-4">
-              <AlertCircle className="h-5 w-5 text-yellow-500" />
-              <p className="text-sm text-muted-foreground">
-                Please verify the extracted {editDialogType === "idNumber" 
-                  ? "Aadhaar number" 
-                  : editDialogType === "name" 
-                  ? "name" 
-                  : "date of birth"} and make corrections if needed.
-              </p>
-            </div>
-            <div className="space-y-2">
-              {editDialogType === "idNumber" && (
-                <>
-                  <Label htmlFor="idNumber">Aadhaar Number</Label>
-                  <Input
-                    id="idNumber"
-                    value={editedIdNumber}
-                    onChange={(e) => setEditedIdNumber(e.target.value)}
-                    maxLength={12}
-                    pattern="\d*"
-                    inputMode="numeric"
-                    placeholder="12-digit Aadhaar number"
-                  />
-                </>
-              )}
-              
-              {editDialogType === "name" && (
-                <>
-                  <Label htmlFor="name">Full Name</Label>
-                  <Input
-                    id="name"
-                    value={editedName}
-                    onChange={(e) => setEditedName(e.target.value)}
-                    placeholder="Full name as on Aadhaar"
-                  />
-                </>
-              )}
-              
-              {editDialogType === "dob" && (
-                <>
-                  <Label htmlFor="dob">Date of Birth</Label>
-                  <Input
-                    id="dob"
-                    value={editedDob}
-                    onChange={(e) => setEditedDob(e.target.value)}
-                    placeholder="DD/MM/YYYY"
-                  />
-                </>
-              )}
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleEditData}>
-              Save Changes
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </Card>
-  );
-}
-
-export default KycVerification;
