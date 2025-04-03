@@ -46,18 +46,47 @@ const KycVerification = ({ userId, onComplete, formData }: KycVerificationProps)
     gender?: string;
   }>({});
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editDialogType, setEditDialogType] = useState<"idNumber" | "name" | "dob">("idNumber");
   const [editedIdNumber, setEditedIdNumber] = useState("");
+  const [editedName, setEditedName] = useState("");
+  const [editedDob, setEditedDob] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const workerRef = useRef<Tesseract.Worker | null>(null);
 
-  // Initialize Tesseract worker
+  // Initialize Tesseract worker with improved configuration
   useEffect(() => {
     const initWorker = async () => {
-      const worker = await createWorker('eng');
-      workerRef.current = worker;
+      // Initialize worker with multiple languages for better recognition
+      try {
+        const worker = await createWorker({
+          logger: m => console.log(m),
+          langPath: 'https://tessdata.projectnaptha.com/4.0.0',
+        });
+        await worker.loadLanguage('eng');
+        await worker.initialize('eng');
+        // Set tesseract parameters for better text detection
+        await worker.setParameters({
+          tessedit_char_whitelist: '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz/- ',
+          // Improve OCR quality at the expense of speed
+          tessjs_create_hocr: '0',
+          tessjs_create_tsv: '0',
+          tessedit_ocr_engine_mode: '1', // Use LSTM only
+          tessjs_create_pdf: '0',
+        });
+        workerRef.current = worker;
+        
+        console.log("Tesseract worker initialized successfully");
+      } catch (error) {
+        console.error("Failed to initialize Tesseract worker:", error);
+        toast({
+          title: "OCR Initialization Failed",
+          description: "There was a problem setting up the text recognition system.",
+          variant: "destructive"
+        });
+      }
     };
 
     initWorker();
@@ -109,108 +138,220 @@ const KycVerification = ({ userId, onComplete, formData }: KycVerificationProps)
       // Create an image URL for the file
       const imageUrl = URL.createObjectURL(idImage);
       
-      // Perform OCR on the image
-      const result = await workerRef.current.recognize(imageUrl);
-      
-      // Clean up the URL
-      URL.revokeObjectURL(imageUrl);
-      
-      // Process the OCR text
-      const ocrText = result.data.text;
-      console.log('OCR extracted text:', ocrText);
-      
-      // Extract Aadhaar number using regex pattern (12 digits, may be space-separated)
-      const aadhaarRegex = /\b(\d{4}\s?\d{4}\s?\d{4})\b/;
-      const aadhaarMatch = ocrText.match(aadhaarRegex);
-      
-      // Create object to store extracted data
-      const extracted: {
-        idNumber?: string;
-        name?: string;
-        dob?: string;
-        address?: string;
-        gender?: string;
-      } = {};
-      
-      // If we found an Aadhaar number
-      if (aadhaarMatch) {
-        // Remove spaces from Aadhaar number
-        const aadhaarNumber = aadhaarMatch[1].replace(/\s/g, '');
-        extracted.idNumber = aadhaarNumber;
-        
-        // Look for DOB pattern (DD/MM/YYYY)
-        const dobRegex = /\b(\d{2}\/\d{2}\/\d{4})\b/;
-        const dobMatch = ocrText.match(dobRegex);
-        if (dobMatch) {
-          extracted.dob = dobMatch[1];
+      // Process image with canvas first to improve OCR accuracy
+      const img = new Image();
+      img.onload = async () => {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          URL.revokeObjectURL(imageUrl);
+          setIsProcessing(false);
+          throw new Error("Could not get canvas context");
         }
         
-        // Look for name - typically appears with "Name:" or after "To,"
-        // This is a simplified approach, a more robust solution would use NER
-        const nameLines = ocrText.split('\n').filter(line => 
-          line.includes('Name:') || 
-          (line.length > 10 && /^[A-Z][a-z]+ [A-Z][a-z]+/.test(line))
-        );
+        // Set canvas dimensions
+        canvas.width = img.width;
+        canvas.height = img.height;
         
-        if (nameLines.length > 0) {
-          const nameLine = nameLines[0];
-          if (nameLine.includes('Name:')) {
-            extracted.name = nameLine.split('Name:')[1].trim();
-          } else {
-            // Just take the first capitalized words as the name
-            extracted.name = nameLine.trim();
+        // Draw and enhance image
+        ctx.drawImage(img, 0, 0, img.width, img.height);
+        
+        // Apply image processing for better OCR
+        // Convert to high contrast black and white
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const data = imageData.data;
+        
+        // Apply simple thresholding to improve text contrast
+        for (let i = 0; i < data.length; i += 4) {
+          const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
+          const threshold = 127;
+          const newValue = avg > threshold ? 255 : 0;
+          data[i] = data[i + 1] = data[i + 2] = newValue;
+        }
+        
+        ctx.putImageData(imageData, 0, 0);
+        
+        // Get the enhanced image
+        const enhancedImage = canvas.toDataURL('image/png');
+        
+        // Perform OCR on the enhanced image
+        try {
+          const result = await workerRef.current!.recognize(enhancedImage);
+          
+          // Process the OCR text
+          const ocrText = result.data.text;
+          console.log('OCR extracted text:', ocrText);
+          
+          // Create object to store extracted data
+          const extracted: {
+            idNumber?: string;
+            name?: string;
+            dob?: string;
+            address?: string;
+            gender?: string;
+          } = {};
+          
+          // Extract Aadhaar number using multiple regex patterns
+          // Pattern for 12 digits, which may be space-separated or hyphen-separated
+          const aadhaarPatterns = [
+            /\b(\d{4}\s?\d{4}\s?\d{4})\b/,         // XXXX XXXX XXXX
+            /\b(\d{4}-\d{4}-\d{4})\b/,             // XXXX-XXXX-XXXX
+            /\b(\d{12})\b/,                        // XXXXXXXXXXXX 
+            /[Nn]umber\s*:?\s*(\d{4}[\s-]?\d{4}[\s-]?\d{4})/,  // Number: XXXX XXXX XXXX
+            /[Aa]adhaar\s*:?\s*(\d{4}[\s-]?\d{4}[\s-]?\d{4})/, // Aadhaar: XXXX XXXX XXXX
+            /[Uu][Ii][Dd]\s*:?\s*(\d{4}[\s-]?\d{4}[\s-]?\d{4})/ // UID: XXXX XXXX XXXX
+          ];
+          
+          // Try each pattern until we find a match
+          let aadhaarMatch = null;
+          for (const pattern of aadhaarPatterns) {
+            aadhaarMatch = ocrText.match(pattern);
+            if (aadhaarMatch) break;
           }
-        }
-        
-        // Extract gender if present
-        if (ocrText.includes('MALE') || ocrText.includes('Male')) {
-          extracted.gender = 'Male';
-        } else if (ocrText.includes('FEMALE') || ocrText.includes('Female')) {
-          extracted.gender = 'Female';
-        }
-        
-        // Extract address - usually multi-line and after "Address:"
-        // This is simplified; a more robust solution would use NER or layout analysis
-        const addressIndex = ocrText.indexOf('Address:');
-        if (addressIndex > -1) {
-          const addressText = ocrText.substring(addressIndex + 8);
-          const endOfAddress = addressText.indexOf('\n\n');
-          if (endOfAddress > -1) {
-            extracted.address = addressText.substring(0, endOfAddress).trim();
+          
+          // If we found an Aadhaar number
+          if (aadhaarMatch) {
+            // Remove spaces and hyphens from Aadhaar number
+            const aadhaarNumber = aadhaarMatch[1].replace(/[\s-]/g, '');
+            extracted.idNumber = aadhaarNumber;
+            
+            // Enhanced DOB extraction - try multiple date formats
+            const dobPatterns = [
+              /\b(DOB|Date\s+of\s+Birth|Birth\s+Date)[\s:]+(\d{2}[/.-]\d{2}[/.-]\d{4})\b/i,
+              /\b(DOB|Date\s+of\s+Birth|Birth\s+Date)[\s:]+(\d{2}[/.-]\d{2}[/.-]\d{2})\b/i,
+              /\b(\d{2}[/.-]\d{2}[/.-]\d{4})\b/,                     // DD/MM/YYYY
+              /\b(\d{2}[/.-]\d{2}[/.-]\d{2})\b/,                     // DD/MM/YY
+              /\b(0[1-9]|[12][0-9]|3[01])[/.-](0[1-9]|1[0-2])[/.-](19|20)\d{2}\b/ // DD/MM/YYYY with validation
+            ];
+            
+            let dobMatch = null;
+            for (const pattern of dobPatterns) {
+              const matches = ocrText.match(pattern);
+              if (matches) {
+                // If the pattern has a named group (like "DOB:"), take the second capture group
+                dobMatch = matches.length > 2 ? matches[2] : matches[1];
+                break;
+              }
+            }
+            
+            if (dobMatch) {
+              extracted.dob = dobMatch;
+            }
+            
+            // Enhanced name extraction
+            // 1. First try to find name with labels like "Name:" or "नाम:" (Hindi)
+            const nameLabels = [
+              /Name\s*[:]\s*([A-Z][a-z]+(?: [A-Z][a-z]+)+)/i,
+              /\b([A-Z][a-z]+(?: [A-Z][a-z]+){1,3})\b(?=.*DOB|.*Date)/i,  // Name followed by DOB somewhere
+              /\b([A-Z][a-z]+(?: [A-Z][a-z]+){1,3})\b(?=.*\d{4}[\s-]?\d{4}[\s-]?\d{4})/i, // Name near Aadhaar number
+              /\b([A-Z][a-z]+(?: [A-Z][a-z]+){1,2})\b/   // Just any properly formatted name (last resort)
+            ];
+            
+            let nameMatch = null;
+            for (const pattern of nameLabels) {
+              const matches = ocrText.match(pattern);
+              if (matches) {
+                nameMatch = matches[1];
+                // Verify it's a name (more than one word, not including any digits)
+                if (nameMatch.split(/\s+/).length > 1 && !/\d/.test(nameMatch)) {
+                  break;
+                }
+              }
+            }
+            
+            if (nameMatch) {
+              // Clean up the name - remove extra spaces, normalize case
+              const cleanedName = nameMatch.replace(/\s+/g, ' ').trim();
+              // If name is all uppercase, convert to title case
+              if (cleanedName === cleanedName.toUpperCase()) {
+                extracted.name = cleanedName.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+              } else {
+                extracted.name = cleanedName;
+              }
+            }
+            
+            // Extract gender if present
+            if (ocrText.match(/\b(male|MALE)\b/i)) {
+              extracted.gender = 'Male';
+            } else if (ocrText.match(/\b(female|FEMALE)\b/i)) {
+              extracted.gender = 'Female';
+            }
+            
+            // Extract address - usually multi-line and after "Address:"
+            const addressMatch = ocrText.match(/Address\s*[:]\s*([\s\S]*?)(?=\n\n|\n[A-Z]|$)/i);
+            if (addressMatch) {
+              extracted.address = addressMatch[1].trim();
+            }
+            
+            // Set the extracted data
+            setExtractedData(extracted);
+            
+            // Check if we need to show edit dialog for any field
+            const needsEditing = 
+              (extracted.idNumber && formData?.idNumber && extracted.idNumber !== formData.idNumber) ||
+              (extracted.name && formData?.fullName && !formData.fullName.includes(extracted.name)) ||
+              (extracted.dob && formData?.dob && extracted.dob !== formData.dob);
+              
+            if (extracted.idNumber && (!formData?.idNumber || extracted.idNumber !== formData.idNumber)) {
+              setEditedIdNumber(extracted.idNumber);
+              setEditDialogType("idNumber");
+              setIsEditDialogOpen(true);
+            } else if (extracted.name && (!formData?.fullName || !formData.fullName.includes(extracted.name))) {
+              setEditedName(extracted.name);
+              setEditDialogType("name");
+              setIsEditDialogOpen(true);
+            } else if (extracted.dob && (!formData?.dob || extracted.dob !== formData.dob)) {
+              setEditedDob(extracted.dob);
+              setEditDialogType("dob");
+              setIsEditDialogOpen(true);
+            }
+            
+            toast({
+              title: "Data Extracted",
+              description: "We've successfully extracted information from your Aadhaar card."
+            });
           } else {
-            extracted.address = addressText.substring(0, 100).trim(); // Take first 100 chars
+            console.log("No Aadhaar number found in:", ocrText);
+            toast({
+              title: "Extraction Issue",
+              description: "We couldn't identify an Aadhaar number. Please ensure the image is clear and try again.",
+              variant: "destructive"
+            });
           }
+        } catch (error) {
+          console.error('OCR recognition error:', error);
+          toast({
+            title: "Recognition Failed",
+            description: "There was a problem processing the image. Please try a clearer image.",
+            variant: "destructive"
+          });
+        } finally {
+          // Clean up
+          URL.revokeObjectURL(imageUrl);
+          setIsProcessing(false);
         }
-        
-        // Set the extracted data
-        setExtractedData(extracted);
-        
-        // If extracted ID is different from form data, show edit dialog
-        if (extracted.idNumber && extracted.idNumber !== formData?.idNumber) {
-          setEditedIdNumber(extracted.idNumber);
-          setIsEditDialogOpen(true);
-        }
-        
+      };
+      
+      img.onerror = () => {
+        URL.revokeObjectURL(imageUrl);
+        setIsProcessing(false);
         toast({
-          title: "Data Extracted",
-          description: "We've successfully extracted information from your Aadhaar card."
-        });
-      } else {
-        toast({
-          title: "Extraction Issue",
-          description: "We couldn't identify an Aadhaar number. Please ensure the image is clear and try again.",
+          title: "Image Load Error",
+          description: "Failed to load the image. Please try a different file.",
           variant: "destructive"
         });
-      }
+      };
+      
+      img.src = imageUrl;
+      
     } catch (error) {
       console.error('OCR extraction error:', error);
+      setIsProcessing(false);
       toast({
         title: "Extraction Failed",
         description: "We encountered an error while processing your ID. Please try again with a clearer image.",
         variant: "destructive"
       });
-    } finally {
-      setIsProcessing(false);
     }
   };
 
@@ -364,16 +505,42 @@ const KycVerification = ({ userId, onComplete, formData }: KycVerificationProps)
     }, 2000);
   };
 
-  const handleEditIdNumber = () => {
-    // Update formData with corrected ID number
+  const handleEditData = () => {
+    // Update formData with corrected data based on dialog type
     if (formData) {
-      // In a real app, you would update the formData here
-      toast({
-        title: "ID Number Updated",
-        description: `ID Number has been corrected to: ${editedIdNumber}`
-      });
+      if (editDialogType === "idNumber") {
+        // In a real app, you would update the formData.idNumber here
+        toast({
+          title: "ID Number Updated",
+          description: `ID Number has been corrected to: ${editedIdNumber}`
+        });
+      } else if (editDialogType === "name") {
+        // In a real app, you would update the formData.fullName here
+        toast({
+          title: "Name Updated",
+          description: `Name has been corrected to: ${editedName}`
+        });
+      } else if (editDialogType === "dob") {
+        // In a real app, you would update the formData.dob here
+        toast({
+          title: "Date of Birth Updated",
+          description: `Date of Birth has been corrected to: ${editedDob}`
+        });
+      }
     }
     setIsEditDialogOpen(false);
+  };
+
+  const openEditDialog = (type: "idNumber" | "name" | "dob") => {
+    setEditDialogType(type);
+    if (type === "idNumber") {
+      setEditedIdNumber(extractedData.idNumber || "");
+    } else if (type === "name") {
+      setEditedName(extractedData.name || "");
+    } else if (type === "dob") {
+      setEditedDob(extractedData.dob || "");
+    }
+    setIsEditDialogOpen(true);
   };
   
   return (
@@ -465,8 +632,14 @@ const KycVerification = ({ userId, onComplete, formData }: KycVerificationProps)
                         variant="ghost" 
                         size="sm" 
                         onClick={() => {
-                          setEditedIdNumber(extractedData.idNumber || "");
-                          setIsEditDialogOpen(true);
+                          // Choose which field to edit based on available data
+                          if (extractedData.idNumber) {
+                            openEditDialog("idNumber");
+                          } else if (extractedData.name) {
+                            openEditDialog("name");
+                          } else if (extractedData.dob) {
+                            openEditDialog("dob");
+                          }
                         }}
                       >
                         <Edit className="h-4 w-4 mr-1" />
@@ -476,13 +649,43 @@ const KycVerification = ({ userId, onComplete, formData }: KycVerificationProps)
                     
                     <div className="space-y-2 text-sm">
                       {extractedData.idNumber && (
-                        <p><span className="font-semibold">Aadhaar Number:</span> {extractedData.idNumber}</p>
+                        <div className="flex justify-between items-center">
+                          <p><span className="font-semibold">Aadhaar Number:</span> {extractedData.idNumber}</p>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-6 w-6 p-0" 
+                            onClick={() => openEditDialog("idNumber")}
+                          >
+                            <Edit className="h-3 w-3" />
+                          </Button>
+                        </div>
                       )}
                       {extractedData.name && (
-                        <p><span className="font-semibold">Name:</span> {extractedData.name}</p>
+                        <div className="flex justify-between items-center">
+                          <p><span className="font-semibold">Name:</span> {extractedData.name}</p>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-6 w-6 p-0" 
+                            onClick={() => openEditDialog("name")}
+                          >
+                            <Edit className="h-3 w-3" />
+                          </Button>
+                        </div>
                       )}
                       {extractedData.dob && (
-                        <p><span className="font-semibold">Date of Birth:</span> {extractedData.dob}</p>
+                        <div className="flex justify-between items-center">
+                          <p><span className="font-semibold">Date of Birth:</span> {extractedData.dob}</p>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-6 w-6 p-0" 
+                            onClick={() => openEditDialog("dob")}
+                          >
+                            <Edit className="h-3 w-3" />
+                          </Button>
+                        </div>
                       )}
                       {extractedData.gender && (
                         <p><span className="font-semibold">Gender:</span> {extractedData.gender}</p>
@@ -768,33 +971,71 @@ const KycVerification = ({ userId, onComplete, formData }: KycVerificationProps)
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Edit Extracted Aadhaar Number</DialogTitle>
+            <DialogTitle>
+              {editDialogType === "idNumber" 
+                ? "Edit Extracted Aadhaar Number" 
+                : editDialogType === "name" 
+                ? "Edit Extracted Name" 
+                : "Edit Extracted Date of Birth"}
+            </DialogTitle>
           </DialogHeader>
           <div className="py-4">
             <div className="flex items-center space-x-2 mb-4">
               <AlertCircle className="h-5 w-5 text-yellow-500" />
               <p className="text-sm text-muted-foreground">
-                Please verify the extracted Aadhaar number and make corrections if needed.
+                Please verify the extracted {editDialogType === "idNumber" 
+                  ? "Aadhaar number" 
+                  : editDialogType === "name" 
+                  ? "name" 
+                  : "date of birth"} and make corrections if needed.
               </p>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="idNumber">Aadhaar Number</Label>
-              <Input
-                id="idNumber"
-                value={editedIdNumber}
-                onChange={(e) => setEditedIdNumber(e.target.value)}
-                maxLength={12}
-                pattern="\d*"
-                inputMode="numeric"
-                placeholder="12-digit Aadhaar number"
-              />
+              {editDialogType === "idNumber" && (
+                <>
+                  <Label htmlFor="idNumber">Aadhaar Number</Label>
+                  <Input
+                    id="idNumber"
+                    value={editedIdNumber}
+                    onChange={(e) => setEditedIdNumber(e.target.value)}
+                    maxLength={12}
+                    pattern="\d*"
+                    inputMode="numeric"
+                    placeholder="12-digit Aadhaar number"
+                  />
+                </>
+              )}
+              
+              {editDialogType === "name" && (
+                <>
+                  <Label htmlFor="name">Full Name</Label>
+                  <Input
+                    id="name"
+                    value={editedName}
+                    onChange={(e) => setEditedName(e.target.value)}
+                    placeholder="Full name as on Aadhaar"
+                  />
+                </>
+              )}
+              
+              {editDialogType === "dob" && (
+                <>
+                  <Label htmlFor="dob">Date of Birth</Label>
+                  <Input
+                    id="dob"
+                    value={editedDob}
+                    onChange={(e) => setEditedDob(e.target.value)}
+                    placeholder="DD/MM/YYYY"
+                  />
+                </>
+              )}
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleEditIdNumber}>
+            <Button onClick={handleEditData}>
               Save Changes
             </Button>
           </DialogFooter>
