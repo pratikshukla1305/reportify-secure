@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -846,4 +847,183 @@ const KycVerification = ({ userId, onComplete, formData }: KycVerificationProps)
               </div>
               <div>
                 <Label className="text-sm text-gray-500">Nationality</Label>
-                <p className="font
+                <p className="font-medium">{formData.nationality}</p>
+              </div>
+              <div>
+                <Label className="text-sm text-gray-500">ID Type</Label>
+                <p className="font-medium">{formData.idType.replace('_', ' ')}</p>
+              </div>
+              <div>
+                <Label className="text-sm text-gray-500">ID Number</Label>
+                <p className="font-medium">{formData.idNumber}</p>
+              </div>
+              <div>
+                <Label className="text-sm text-gray-500">Phone</Label>
+                <p className="font-medium">{formData.phone}</p>
+              </div>
+              <div>
+                <Label className="text-sm text-gray-500">Email</Label>
+                <p className="font-medium">{formData.email}</p>
+              </div>
+              <div>
+                <Label className="text-sm text-gray-500">Address</Label>
+                <p className="font-medium">{formData.address}</p>
+              </div>
+            </div>
+          </div>
+        )}
+      </CardContent>
+      
+      <CardFooter className="flex justify-between">
+        {!isComplete ? (
+          <Button onClick={handleSubmit} disabled={isSubmitting || !idFront || !idBack || !selfie}>
+            {isSubmitting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Submitting...
+              </>
+            ) : (
+              <>Submit Verification</>
+            )}
+          </Button>
+        ) : (
+          <Button variant="outline" onClick={() => window.location.reload()}>
+            Go Back
+          </Button>
+        )}
+      </CardFooter>
+      
+      {/* Image Preview Sheet */}
+      <Sheet open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
+        <SheetContent className="sm:max-w-lg w-full" side="right">
+          <SheetHeader>
+            <SheetTitle>
+              {previewType === 'idFront' ? 'ID Front' : previewType === 'idBack' ? 'ID Back' : 'Selfie'} Preview
+            </SheetTitle>
+            <SheetDescription>
+              View your uploaded document.
+            </SheetDescription>
+          </SheetHeader>
+          <div className="mt-6">
+            {previewType === 'idFront' && idFront && (
+              <img 
+                src={URL.createObjectURL(idFront)} 
+                alt="ID Front" 
+                className="w-full rounded-md"
+              />
+            )}
+            {previewType === 'idBack' && idBack && (
+              <img 
+                src={URL.createObjectURL(idBack)} 
+                alt="ID Back" 
+                className="w-full rounded-md"
+              />
+            )}
+            {previewType === 'selfie' && selfie && (
+              <img 
+                src={URL.createObjectURL(selfie)} 
+                alt="Selfie" 
+                className="w-full rounded-md"
+              />
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
+      
+      {/* Camera Dialog */}
+      <Dialog open={isCameraOpen} onOpenChange={(open) => {
+        if (!open) handleCameraClose();
+        setIsCameraOpen(open);
+      }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              Capture {captureType === 'idFront' ? 'ID Front' : captureType === 'idBack' ? 'ID Back' : 'Selfie'}
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="relative mt-2 bg-black rounded-md overflow-hidden">
+            <video 
+              ref={videoRef} 
+              autoPlay 
+              playsInline
+              className="w-full h-auto max-h-[50vh]"
+            />
+            <canvas ref={canvasRef} className="hidden" />
+          </div>
+          
+          <DialogFooter className="flex sm:justify-between">
+            <Button variant="secondary" onClick={handleCameraClose}>
+              <X className="mr-2 h-4 w-4" />
+              Cancel
+            </Button>
+            <Button onClick={capturePhoto}>
+              <Camera className="mr-2 h-4 w-4" />
+              Capture
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Edit Data Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              Edit {editDialogType === 'idNumber' ? 'ID Number' : editDialogType === 'name' ? 'Name' : 'Date of Birth'}
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="mt-4">
+            {editDialogType === 'idNumber' && (
+              <div className="grid gap-2">
+                <Label htmlFor="id-number">Aadhaar Number</Label>
+                <Input 
+                  id="id-number" 
+                  value={editedIdNumber} 
+                  onChange={(e) => setEditedIdNumber(e.target.value)} 
+                  placeholder="XXXX XXXX XXXX"
+                />
+              </div>
+            )}
+            
+            {editDialogType === 'name' && (
+              <div className="grid gap-2">
+                <Label htmlFor="name">Full Name</Label>
+                <Input 
+                  id="name" 
+                  value={editedName} 
+                  onChange={(e) => setEditedName(e.target.value)} 
+                  placeholder="Your full name"
+                />
+              </div>
+            )}
+            
+            {editDialogType === 'dob' && (
+              <div className="grid gap-2">
+                <Label htmlFor="dob">Date of Birth</Label>
+                <Input 
+                  id="dob" 
+                  value={editedDob} 
+                  onChange={(e) => setEditedDob(e.target.value)} 
+                  placeholder="DD/MM/YYYY"
+                />
+              </div>
+            )}
+          </div>
+          
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleEditData}>
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </Card>
+  );
+};
+
+export default KycVerification;
