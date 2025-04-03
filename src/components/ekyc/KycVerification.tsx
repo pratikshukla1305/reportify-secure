@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -157,7 +158,7 @@ const KycVerification = ({ userId, onComplete, formData }: KycVerificationProps)
         const data = imageData.data;
         
         // Apply simple thresholding to improve text contrast
-        for (let i = 0; < data.length; i += 4) {
+        for (let i = 0; i < data.length; i += 4) {
           const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
           const threshold = 127;
           const newValue = avg > threshold ? 255 : 0;
@@ -236,7 +237,7 @@ const KycVerification = ({ userId, onComplete, formData }: KycVerificationProps)
             // Enhanced name extraction
             // 1. First try to find name with labels like "Name:" or "नाम:" (Hindi)
             const nameLabels = [
-              /Name\s*[:]\s*([A-Z][a-z]+(?: [A-Z][a-z]+)+)/i,
+              /Name\s*[:]?\s*([A-Z][a-z]+(?: [A-Z][a-z]+)+)/i,
               /\b([A-Z][a-z]+(?: [A-Z][a-z]+){1,3})\b(?=.*DOB|.*Date)/i,  // Name followed by DOB somewhere
               /\b([A-Z][a-z]+(?: [A-Z][a-z]+){1,3})\b(?=.*\d{4}[\s-]?\d{4}[\s-]?\d{4})/i, // Name near Aadhaar number
               /\b([A-Z][a-z]+(?: [A-Z][a-z]+){1,2})\b/   // Just any properly formatted name (last resort)
@@ -273,7 +274,7 @@ const KycVerification = ({ userId, onComplete, formData }: KycVerificationProps)
             }
             
             // Extract address - usually multi-line and after "Address:"
-            const addressMatch = ocrText.match(/Address\s*[:]\s*([\s\S]*?)(?=\n\n|\n[A-Z]|$)/i);
+            const addressMatch = ocrText.match(/Address\s*[:]?\s*([\s\S]*?)(?=\n\n|\n[A-Z]|$)/i);
             if (addressMatch) {
               extracted.address = addressMatch[1].trim();
             }
@@ -859,3 +860,141 @@ const KycVerification = ({ userId, onComplete, formData }: KycVerificationProps)
         {!isComplete ? (
           <Button onClick={handleSubmit} disabled={isSubmitting || !idFront || !idBack || !selfie}>
             {isSubmitting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Submitting...
+              </>
+            ) : (
+              "Submit Verification"
+            )}
+          </Button>
+        ) : (
+          <Button variant="outline" onClick={() => onComplete && onComplete()}>
+            Continue
+          </Button>
+        )}
+      </CardFooter>
+      
+      {/* Preview sheet for document and selfie images */}
+      <Sheet open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
+        <SheetContent className="w-full sm:max-w-lg">
+          <SheetHeader>
+            <SheetTitle>
+              {previewType === "idFront" 
+                ? "ID Front" 
+                : previewType === "idBack" 
+                  ? "ID Back" 
+                  : "Selfie"} Preview
+            </SheetTitle>
+          </SheetHeader>
+          <div className="mt-8 text-center">
+            {previewType === "idFront" && idFront && (
+              <img 
+                src={URL.createObjectURL(idFront)} 
+                alt="ID Front" 
+                className="max-h-[70vh] max-w-full mx-auto rounded-md"
+              />
+            )}
+            {previewType === "idBack" && idBack && (
+              <img 
+                src={URL.createObjectURL(idBack)} 
+                alt="ID Back" 
+                className="max-h-[70vh] max-w-full mx-auto rounded-md"
+              />
+            )}
+            {previewType === "selfie" && selfie && (
+              <img 
+                src={URL.createObjectURL(selfie)} 
+                alt="Selfie" 
+                className="max-h-[70vh] max-w-full mx-auto rounded-md"
+              />
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
+      
+      {/* Camera dialog */}
+      <Dialog open={isCameraOpen} onOpenChange={(open) => !open && handleCameraClose()}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              Capture {captureType === "idFront" 
+                ? "ID Front" 
+                : captureType === "idBack" 
+                  ? "ID Back" 
+                  : "Selfie"}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="relative bg-black rounded-md overflow-hidden">
+            <video 
+              ref={videoRef} 
+              autoPlay 
+              playsInline 
+              className="w-full h-auto"
+            />
+            <canvas ref={canvasRef} className="hidden" />
+          </div>
+          <DialogFooter className="flex gap-2">
+            <Button variant="outline" onClick={handleCameraClose}>
+              Cancel
+            </Button>
+            <Button onClick={capturePhoto}>
+              <Camera className="mr-2 h-4 w-4" />
+              Capture
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Edit dialog for extracted data */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              Edit {editDialogType === "idNumber" 
+                ? "ID Number" 
+                : editDialogType === "name" 
+                  ? "Name" 
+                  : "Date of Birth"}
+            </DialogTitle>
+          </DialogHeader>
+          {editDialogType === "idNumber" && (
+            <div className="grid gap-4 py-4">
+              <Label htmlFor="edit-id-number">ID Number</Label>
+              <Input 
+                id="edit-id-number" 
+                value={editedIdNumber} 
+                onChange={(e) => setEditedIdNumber(e.target.value)} 
+              />
+            </div>
+          )}
+          {editDialogType === "name" && (
+            <div className="grid gap-4 py-4">
+              <Label htmlFor="edit-name">Name</Label>
+              <Input 
+                id="edit-name" 
+                value={editedName} 
+                onChange={(e) => setEditedName(e.target.value)} 
+              />
+            </div>
+          )}
+          {editDialogType === "dob" && (
+            <div className="grid gap-4 py-4">
+              <Label htmlFor="edit-dob">Date of Birth</Label>
+              <Input 
+                id="edit-dob" 
+                value={editedDob} 
+                onChange={(e) => setEditedDob(e.target.value)} 
+              />
+            </div>
+          )}
+          <DialogFooter>
+            <Button onClick={handleEditData}>Save Changes</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </Card>
+  );
+};
+
+export default KycVerification;
