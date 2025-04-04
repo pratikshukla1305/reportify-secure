@@ -17,6 +17,8 @@ const AuthButton = ({ className }: AuthButtonProps) => {
   const [isLoading, setIsLoading] = useState<string | null>(null);
   const { toast: uiToast } = useToast();
   const navigate = useNavigate();
+  
+  const REDIRECT_URL = 'http://localhost:3000/dashboard';
 
   const handleGoogleLogin = async () => {
     setIsLoading('google');
@@ -25,7 +27,7 @@ const AuthButton = ({ className }: AuthButtonProps) => {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: 'http://localhost:3000/dashboard',
+          redirectTo: REDIRECT_URL,
         },
       });
       
@@ -56,7 +58,7 @@ const AuthButton = ({ className }: AuthButtonProps) => {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'github',
         options: {
-          redirectTo: 'http://localhost:3000/dashboard',
+          redirectTo: REDIRECT_URL,
         },
       });
       

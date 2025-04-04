@@ -57,7 +57,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       if (error) {
         console.error('Sign-in error:', error.message);
-        throw error;
+        uiToast({
+          title: "Error signing in",
+          description: error.message,
+          variant: "destructive",
+        });
+        toast.error(`Error signing in: ${error.message}`);
+        return { error };
       }
       
       console.log('Sign-in successful:', data.user?.email);
@@ -93,7 +99,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       if (error) {
         console.error('Sign-up error:', error.message);
-        throw error;
+        uiToast({
+          title: "Error signing up",
+          description: error.message,
+          variant: "destructive",
+        });
+        toast.error(`Error signing up: ${error.message}`);
+        return { error };
       }
       
       console.log('Sign-up successful, user:', data.user?.id);
@@ -113,9 +125,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             
           if (profileError) {
             console.error('Error creating profile:', profileError.message);
+            uiToast({
+              title: "Error creating profile",
+              description: profileError.message,
+              variant: "destructive",
+            });
           }
-        } catch (profileErr) {
-          console.error('Profile creation error:', profileErr);
+        } catch (profileErr: any) {
+          console.error('Profile creation error:', profileErr.message);
         }
       }
       

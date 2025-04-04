@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -51,10 +50,16 @@ const GetStarted = () => {
     
     try {
       const { error } = await signUp(email, password, fullName);
-      if (!error) {
+      if (error) {
+        console.error("Sign up error:", error.message);
+      } else {
         console.log("Sign up successful, redirecting to sign in");
+        toast.success("Account created successfully! Please verify your email (if required) and sign in.");
         navigate('/signin');
       }
+    } catch (err: any) {
+      console.error("Unexpected error during sign up:", err);
+      toast.error("An unexpected error occurred");
     } finally {
       setIsLoading(false);
     }
