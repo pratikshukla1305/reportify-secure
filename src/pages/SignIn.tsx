@@ -42,13 +42,8 @@ const SignIn = () => {
       const { error } = await signIn(email, password);
       if (!error) {
         console.log("Sign in successful, redirecting to dashboard");
-        toast.success("Sign in successful!");
         navigate('/dashboard');
-      } else {
-        console.error("Sign in error:", error.message);
       }
-    } catch (err) {
-      console.error("Unexpected error during sign in:", err);
     } finally {
       setIsLoading(false);
     }

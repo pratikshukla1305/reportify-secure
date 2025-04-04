@@ -83,7 +83,6 @@ const AuthButton = ({ className }: AuthButtonProps) => {
   const handleMetaMaskLogin = async () => {
     setIsLoading('metamask');
     // This is a placeholder for MetaMask integration
-    // In a real implementation, you would integrate with Web3 and MetaMask
     toast.info("MetaMask login is not yet implemented");
     uiToast({
       title: "MetaMask Integration",
@@ -93,8 +92,20 @@ const AuthButton = ({ className }: AuthButtonProps) => {
     setIsOpen(false);
   };
 
+  // Close the dropdown when clicking outside
+  React.useEffect(() => {
+    const handleOutsideClick = (event: MouseEvent) => {
+      if (isOpen && !(event.target as Element).closest('.auth-dropdown')) {
+        setIsOpen(false);
+      }
+    };
+    
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, [isOpen]);
+
   return (
-    <div className={cn('relative', className)}>
+    <div className={cn('relative auth-dropdown', className)}>
       <Button 
         variant="outline" 
         className="border-shield-blue text-shield-blue hover:bg-shield-blue hover:text-white transition-all"
