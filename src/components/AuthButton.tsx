@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Shield, User } from 'lucide-react';
@@ -24,7 +25,7 @@ const AuthButton = ({ className }: AuthButtonProps) => {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/dashboard`,
+          redirectTo: 'http://localhost:3000/dashboard',
         },
       });
       
@@ -55,7 +56,7 @@ const AuthButton = ({ className }: AuthButtonProps) => {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'github',
         options: {
-          redirectTo: `${window.location.origin}/dashboard`,
+          redirectTo: 'http://localhost:3000/dashboard',
         },
       });
       

@@ -24,6 +24,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const { toast: uiToast } = useToast();
 
   useEffect(() => {
+    console.log('Setting up auth state listener');
+    
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
@@ -76,6 +78,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signUp = async (email: string, password: string, fullName: string) => {
     try {
       console.log('Signing up with:', email, fullName);
+      
+      // Using signUp method
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -83,6 +87,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           data: {
             full_name: fullName,
           },
+          emailRedirectTo: 'http://localhost:3000/dashboard',
         },
       });
       
@@ -116,9 +121,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       uiToast({
         title: "Success!",
-        description: "Account created successfully. Please sign in.",
+        description: "Account created successfully. Please verify your email and sign in.",
       });
-      toast.success("Account created successfully. Please sign in.");
+      toast.success("Account created successfully. Please verify your email and sign in.");
       return { error: null };
     } catch (error: any) {
       console.error('Sign-up caught error:', error.message);
