@@ -15,20 +15,26 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: true,
-    flowType: 'pkce'
+    flowType: 'pkce',
+    debug: true // Enable debug logging for auth issues
   },
   db: {
     schema: 'public',
   },
   global: {
-    fetch: fetch.bind(globalThis)
-  }
+    fetch: fetch.bind(globalThis),
+  },
+  realtime: {
+    params: {
+      eventsPerSecond: 10,
+    },
+  },
 });
 
-// Configure Database Connection (This comment describes the PostgreSQL connection that's used by Supabase)
+// Configure Database Connection (PostgreSQL)
 // Connection details:
-// user: 'your_username'
-// host: 'postgres'
-// database: 'law'
+// user: 'postgres'
+// host: 'localhost'
+// database: 'Law'
 // password: 'Pratik@1305'
 // port: 5432
