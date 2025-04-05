@@ -135,9 +135,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const { error: profileError } = await supabase
             .from('profiles')
             .insert({
-              name: fullName,
+              full_name: fullName,  // Changed from 'name' to 'full_name' to match the schema
               email: email,
-              password: password, // Note: In production, you should not store plain passwords
+              id: data.user.id,     // Added id field to match the schema
+              // Note: We don't store the password in the profiles table as it's already stored securely in auth.users
             });
             
           if (profileError) {

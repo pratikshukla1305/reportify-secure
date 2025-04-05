@@ -40,7 +40,7 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
 // port: 5432
 //
 // Available Tables:
-// - profiles: User authentication and profile data
+// - profiles: User authentication and profile data (name, email, password)
 // - sos: Emergency SOS requests with location and messages
 // - help_us: Community reporting system with crime sightings
 // - e_kyc: Know Your Customer verification data and documents
