@@ -4,7 +4,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
 import { Link, useNavigate } from 'react-router-dom';
-import { FileText, Save, X, Eye, Image } from 'lucide-react';
+import { FileText, Save, X, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 
 const ContinueReport = () => {
