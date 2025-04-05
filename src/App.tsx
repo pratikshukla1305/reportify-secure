@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -6,6 +5,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { useState } from "react";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { OfficerAuthProvider } from "@/contexts/OfficerAuthContext";
+import ProtectedOfficerRoute from "@/components/officer/ProtectedOfficerRoute";
 import Index from "./pages/Index";
 import Home from "./pages/Home";
 import FeaturesPage from "./pages/Features";
@@ -46,47 +47,60 @@ const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/home" element={<Home />} />
-              <Route path="/features" element={<FeaturesPage />} />
-              <Route path="/how-it-works" element={<HowItWorks />} />
-              <Route path="/signin" element={<SignIn />} />
-              <Route path="/get-started" element={<GetStarted />} />
-              <Route path="/learn-more" element={<LearnMore />} />
-              <Route path="/about-us" element={<AboutUs />} />
-              <Route path="/continue-report" element={<ContinueReport />} />
-              <Route path="/cancel-report" element={<CancelReport />} />
-              <Route path="/view-draft-report" element={<ViewDraftReport />} />
-              <Route path="/generate-detailed-report" element={<GenerateDetailedReport />} />
-              <Route path="/connect-wallet" element={<ConnectWallet />} />
-              <Route path="/learn-about-rewards" element={<LearnAboutRewards />} />
-              <Route path="/view-all-rewards" element={<ViewAllRewards />} />
-              <Route path="/request-demo" element={<RequestDemo />} />
-              <Route path="/e-kyc" element={<EKycPage />} />
-              <Route path="/police-stations" element={<PoliceStationsMap />} />
-              <Route path="/case-heatmap" element={<CaseHeatmap />} />
-              <Route path="/police-station/:id" element={<PoliceStationDetail />} />
-              <Route path="/help-us" element={<HelpUsPage />} />
-              <Route path="/submit-tip" element={<SubmitTipPage />} />
-              <Route path="/advisory" element={<AdvisoryPage />} />
-              <Route path="/officer-login" element={<OfficerLogin />} />
-              <Route path="/officer-registration" element={<OfficerRegistration />} />
-              <Route path="/officer-dashboard" element={<OfficerDashboard />} />
-              <Route path="/officer-profile" element={<OfficerProfile />} />
-              <Route path="/officer-settings" element={<OfficerSettings />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/my-reports" element={<MyReports />} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
-        </TooltipProvider>
+        <OfficerAuthProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/home" element={<Home />} />
+                <Route path="/features" element={<FeaturesPage />} />
+                <Route path="/how-it-works" element={<HowItWorks />} />
+                <Route path="/signin" element={<SignIn />} />
+                <Route path="/get-started" element={<GetStarted />} />
+                <Route path="/learn-more" element={<LearnMore />} />
+                <Route path="/about-us" element={<AboutUs />} />
+                <Route path="/continue-report" element={<ContinueReport />} />
+                <Route path="/cancel-report" element={<CancelReport />} />
+                <Route path="/view-draft-report" element={<ViewDraftReport />} />
+                <Route path="/generate-detailed-report" element={<GenerateDetailedReport />} />
+                <Route path="/connect-wallet" element={<ConnectWallet />} />
+                <Route path="/learn-about-rewards" element={<LearnAboutRewards />} />
+                <Route path="/view-all-rewards" element={<ViewAllRewards />} />
+                <Route path="/request-demo" element={<RequestDemo />} />
+                <Route path="/e-kyc" element={<EKycPage />} />
+                <Route path="/police-stations" element={<PoliceStationsMap />} />
+                <Route path="/case-heatmap" element={<CaseHeatmap />} />
+                <Route path="/police-station/:id" element={<PoliceStationDetail />} />
+                <Route path="/help-us" element={<HelpUsPage />} />
+                <Route path="/submit-tip" element={<SubmitTipPage />} />
+                <Route path="/advisory" element={<AdvisoryPage />} />
+                <Route path="/officer-login" element={<OfficerLogin />} />
+                <Route path="/officer-registration" element={<OfficerRegistration />} />
+                <Route path="/officer-dashboard" element={
+                  <ProtectedOfficerRoute>
+                    <OfficerDashboard />
+                  </ProtectedOfficerRoute>
+                } />
+                <Route path="/officer-profile" element={
+                  <ProtectedOfficerRoute>
+                    <OfficerProfile />
+                  </ProtectedOfficerRoute>
+                } />
+                <Route path="/officer-settings" element={
+                  <ProtectedOfficerRoute>
+                    <OfficerSettings />
+                  </ProtectedOfficerRoute>
+                } />
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/profile" element={<Profile />} />
+                <Route path="/my-reports" element={<MyReports />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+          </TooltipProvider>
+        </OfficerAuthProvider>
       </AuthProvider>
     </QueryClientProvider>
   );

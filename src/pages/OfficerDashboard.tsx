@@ -5,24 +5,49 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge } from '@/components/ui/badge';
 import { Bell, Users, FileText, MapPin, AlertTriangle, Megaphone } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import OfficerNavbar from '@/components/officer/OfficerNavbar';
 import SOSAlertsList from '@/components/officer/SOSAlertsList';
 import KycVerificationList from '@/components/officer/KycVerificationList';
 import OfficerAdvisoryPanel from '@/components/officer/OfficerAdvisoryPanel';
 import OfficerCriminalPanel from '@/components/officer/OfficerCriminalPanel';
 import OfficerCaseMap from '@/components/officer/OfficerCaseMap';
+import { getSosAlerts, getKycVerifications, getCriminalProfiles, getCases } from '@/services/officerServices';
+import { useOfficerAuth } from '@/contexts/OfficerAuthContext';
 
 const OfficerDashboard = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const navigate = useNavigate();
   const location = useLocation();
-
-  // Simulate new notifications for demonstration
+  const { officer } = useOfficerAuth();
+  
+  // Fetch data using React Query
+  const { data: sosAlerts = [] } = useQuery({
+    queryKey: ['sosAlerts'],
+    queryFn: getSosAlerts,
+  });
+  
+  const { data: kycVerifications = [] } = useQuery({
+    queryKey: ['kycVerifications'],
+    queryFn: getKycVerifications,
+  });
+  
+  const { data: criminalProfiles = [] } = useQuery({
+    queryKey: ['criminalProfiles'],
+    queryFn: getCriminalProfiles,
+  });
+  
+  const { data: casesData = [] } = useQuery({
+    queryKey: ['cases'],
+    queryFn: getCases,
+  });
+  
+  // Calculate notifications
   const notifications = {
-    sos: 3,
-    kyc: 5,
-    tips: 2,
-    reports: 8,
+    sos: sosAlerts.filter(alert => alert.status === 'New').length,
+    kyc: kycVerifications.filter(verification => verification.status === 'Pending').length,
+    tips: 0, // You would need to implement criminal tips functionality
+    reports: casesData.filter(caseItem => caseItem.status === 'Open').length,
   };
   
   // Get the tab from URL query parameter
@@ -42,6 +67,17 @@ const OfficerDashboard = () => {
     setActiveTab(value);
     navigate(`/officer-dashboard${value !== 'dashboard' ? `?tab=${value}` : ''}`);
   };
+
+  if (!officer) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-xl font-bold mb-2">Access Denied</h1>
+          <p className="text-gray-600">Please login to access the officer dashboard</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -109,15 +145,15 @@ const OfficerDashboard = () => {
           <Card className="hover:shadow-md transition-shadow">
             <CardHeader className="pb-2">
               <CardTitle className="text-base font-medium flex items-center justify-between">
-                User Tips
-                {notifications.tips > 0 && (
-                  <Badge variant="outline" className="ml-2">{notifications.tips} New</Badge>
+                Criminal Profiles
+                {criminalProfiles.length > 0 && (
+                  <Badge variant="outline" className="ml-2">{criminalProfiles.length} Total</Badge>
                 )}
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex items-center justify-between">
-                <div className="text-3xl font-bold">{notifications.tips}</div>
+                <div className="text-3xl font-bold">{criminalProfiles.length}</div>
                 <div className="p-2 bg-green-100 rounded-full">
                   <Bell className="h-6 w-6 text-green-600" />
                 </div>
@@ -128,7 +164,7 @@ const OfficerDashboard = () => {
                 className="text-sm text-blue-600 hover:underline"
                 onClick={() => handleTabChange('criminals')}
               >
-                View tips
+                Manage profiles
               </button>
             </CardFooter>
           </Card>
@@ -136,15 +172,15 @@ const OfficerDashboard = () => {
           <Card className="hover:shadow-md transition-shadow">
             <CardHeader className="pb-2">
               <CardTitle className="text-base font-medium flex items-center justify-between">
-                User Reports
+                Case Reports
                 {notifications.reports > 0 && (
-                  <Badge variant="secondary" className="ml-2">{notifications.reports} New</Badge>
+                  <Badge variant="secondary" className="ml-2">{notifications.reports} Open</Badge>
                 )}
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex items-center justify-between">
-                <div className="text-3xl font-bold">{notifications.reports}</div>
+                <div className="text-3xl font-bold">{casesData.length}</div>
                 <div className="p-2 bg-purple-100 rounded-full">
                   <FileText className="h-6 w-6 text-purple-600" />
                 </div>
@@ -155,7 +191,7 @@ const OfficerDashboard = () => {
                 className="text-sm text-blue-600 hover:underline"
                 onClick={() => handleTabChange('cases')}
               >
-                View reports
+                View cases
               </button>
             </CardFooter>
           </Card>

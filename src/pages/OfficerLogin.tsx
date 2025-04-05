@@ -1,29 +1,37 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
 import { Shield, Mail, Lock, UserCog } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { useOfficerAuth } from '@/contexts/OfficerAuthContext';
 
 const OfficerLogin = () => {
   const navigate = useNavigate();
+  const { signIn, isAuthenticated } = useOfficerAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate("/officer-dashboard");
+    }
+  }, [isAuthenticated, navigate]);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     
-    // Simulate login process without verification
-    setTimeout(() => {
+    try {
+      const { error } = await signIn(email, password);
+      if (!error) {
+        navigate("/officer-dashboard");
+      }
+    } finally {
       setIsLoading(false);
-      toast.success("Login successful! Welcome officer.");
-      // After successful login, navigate to officer dashboard instead of home
-      navigate("/officer-dashboard");
-    }, 1000);
+    }
   };
 
   return (

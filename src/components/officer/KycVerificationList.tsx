@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -13,16 +12,25 @@ import {
   DialogTitle 
 } from '@/components/ui/dialog';
 import { useToast } from '@/components/ui/use-toast';
-import { 
-  getAllKycVerifications, 
-  updateKycVerificationStatus, 
-  KycVerification
-} from '@/data/kycVerificationsData';
-import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Label } from '@/components/ui/label';
+import { getKycVerifications, updateKycVerificationStatus } from '@/services/officerServices';
 
 interface KycVerificationListProps {
   limit?: number;
+}
+
+interface KycVerification {
+  id: number;
+  full_name: string;
+  email: string;
+  submission_date: string;
+  status: string;
+  officer_action?: string;
+  id_front?: string;
+  id_back?: string;
+  selfie?: string;
+  rejection_reason?: string;
 }
 
 const KycVerificationList = ({ limit }: KycVerificationListProps) => {
@@ -30,17 +38,29 @@ const KycVerificationList = ({ limit }: KycVerificationListProps) => {
   const [selectedVerification, setSelectedVerification] = useState<KycVerification | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('details');
+  const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
-  useEffect(() => {
-    // Load verifications from shared data store
-    loadVerifications();
-  }, [limit]);
-
-  const loadVerifications = () => {
-    const allVerifications = getAllKycVerifications();
-    setVerifications(limit ? allVerifications.slice(0, limit) : allVerifications);
+  const fetchVerifications = async () => {
+    setIsLoading(true);
+    try {
+      const data = await getKycVerifications();
+      const limitedData = limit ? data.slice(0, limit) : data;
+      setVerifications(limitedData);
+    } catch (error: any) {
+      toast({
+        title: "Error fetching verifications",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
+
+  useEffect(() => {
+    fetchVerifications();
+  }, [limit]);
 
   const handleView = (verification: KycVerification) => {
     setSelectedVerification(verification);
@@ -48,50 +68,49 @@ const KycVerificationList = ({ limit }: KycVerificationListProps) => {
     setActiveTab('details');
   };
 
-  const handleApprove = (id: string) => {
-    // Officer badge would come from auth context in a real app
-    const officerBadge = "P-12345";
-    const updated = updateKycVerificationStatus(id, "approved", officerBadge);
-    
-    if (updated) {
-      // Refresh the list
-      loadVerifications();
-      
-      // Close dialog if open
+  const handleApprove = async (id: number) => {
+    try {
+      const officerAction = "Verification approved";
+      await updateKycVerificationStatus(id, "Approved", officerAction);
+      await fetchVerifications();
       if (isDialogOpen) {
         setIsDialogOpen(false);
       }
-      
       toast({
         title: "Verification Approved",
         description: "The user's identity has been verified successfully.",
       });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
     }
   };
 
-  const handleReject = (id: string) => {
-    // Officer badge would come from auth context in a real app
-    const officerBadge = "P-12345";
-    const updated = updateKycVerificationStatus(id, "rejected", officerBadge);
-    
-    if (updated) {
-      // Refresh the list
-      loadVerifications();
-      
-      // Close dialog if open
+  const handleReject = async (id: number, reason = "Verification rejected") => {
+    try {
+      await updateKycVerificationStatus(id, "Rejected", reason);
+      await fetchVerifications();
       if (isDialogOpen) {
         setIsDialogOpen(false);
       }
-      
       toast({
         title: "Verification Rejected",
         description: "The user's identity verification has been rejected.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
       });
     }
   };
 
   const getStatusBadge = (status: string) => {
-    switch (status) {
+    switch (status.toLowerCase()) {
       case 'approved':
         return <Badge className="bg-green-100 text-green-800 hover:bg-green-200">Approved</Badge>;
       case 'rejected':
@@ -101,69 +120,78 @@ const KycVerificationList = ({ limit }: KycVerificationListProps) => {
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex justify-center py-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-shield-blue"></div>
+      </div>
+    );
+  }
+
+  if (verifications.length === 0) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-gray-500">No verification requests found</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
-      {verifications.length === 0 ? (
-        <div className="text-center py-8">
-          <p className="text-gray-500">No verification requests found</p>
-        </div>
-      ) : (
-        verifications.map((verification) => (
-          <div 
-            key={verification.id} 
-            className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
-          >
-            <div className="flex items-center space-x-4 mb-3 sm:mb-0">
-              <Avatar>
-                <AvatarImage src={verification.photo} alt={verification.name} />
-                <AvatarFallback>{verification.name.charAt(0)}</AvatarFallback>
-              </Avatar>
-              <div>
-                <h4 className="font-medium">{verification.name}</h4>
-                <p className="text-sm text-gray-500">{verification.email}</p>
-                <div className="mt-1">
-                  {getStatusBadge(verification.status)}
-                </div>
+      {verifications.map((verification) => (
+        <div 
+          key={verification.id} 
+          className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
+        >
+          <div className="flex items-center space-x-4 mb-3 sm:mb-0">
+            <Avatar>
+              <AvatarImage src={verification.selfie || `https://ui-avatars.com/api/?name=${encodeURIComponent(verification.full_name)}&color=7F9CF5&background=EBF4FF`} alt={verification.full_name} />
+              <AvatarFallback>{verification.full_name.charAt(0)}</AvatarFallback>
+            </Avatar>
+            <div>
+              <h4 className="font-medium">{verification.full_name}</h4>
+              <p className="text-sm text-gray-500">{verification.email}</p>
+              <div className="mt-1">
+                {getStatusBadge(verification.status)}
               </div>
             </div>
-            <div className="flex space-x-2 self-end sm:self-center">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="flex items-center"
-                onClick={() => handleView(verification)}
-              >
-                <Eye className="h-4 w-4 mr-1" />
-                View
-              </Button>
-              {verification.status === 'pending' && (
-                <>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="flex items-center text-green-600 hover:text-green-700 hover:bg-green-50 border-green-200"
-                    onClick={() => handleApprove(verification.id)}
-                  >
-                    <Check className="h-4 w-4 mr-1" />
-                    Approve
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="flex items-center text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
-                    onClick={() => handleReject(verification.id)}
-                  >
-                    <X className="h-4 w-4 mr-1" />
-                    Reject
-                  </Button>
-                </>
-              )}
-            </div>
           </div>
-        ))
-      )}
+          <div className="flex space-x-2 self-end sm:self-center">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="flex items-center"
+              onClick={() => handleView(verification)}
+            >
+              <Eye className="h-4 w-4 mr-1" />
+              View
+            </Button>
+            {verification.status.toLowerCase() === 'pending' && (
+              <>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="flex items-center text-green-600 hover:text-green-700 hover:bg-green-50 border-green-200"
+                  onClick={() => handleApprove(verification.id)}
+                >
+                  <Check className="h-4 w-4 mr-1" />
+                  Approve
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="flex items-center text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                  onClick={() => handleReject(verification.id)}
+                >
+                  <X className="h-4 w-4 mr-1" />
+                  Reject
+                </Button>
+              </>
+            )}
+          </div>
+        </div>
+      ))}
 
-      {/* Detail Dialog */}
       {selectedVerification && (
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
@@ -185,11 +213,11 @@ const KycVerificationList = ({ limit }: KycVerificationListProps) => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="flex items-center gap-2 mb-4 col-span-2">
                     <Avatar className="h-14 w-14">
-                      <AvatarImage src={selectedVerification.photo} alt={selectedVerification.name} />
-                      <AvatarFallback>{selectedVerification.name.charAt(0)}</AvatarFallback>
+                      <AvatarImage src={selectedVerification.selfie || `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedVerification.full_name)}&color=7F9CF5&background=EBF4FF`} alt={selectedVerification.full_name} />
+                      <AvatarFallback>{selectedVerification.full_name.charAt(0)}</AvatarFallback>
                     </Avatar>
                     <div>
-                      <p className="font-medium text-lg">{selectedVerification.name}</p>
+                      <p className="font-medium text-lg">{selectedVerification.full_name}</p>
                       <p className="text-sm text-gray-500">{selectedVerification.email}</p>
                       <div className="mt-1">{getStatusBadge(selectedVerification.status)}</div>
                     </div>
@@ -201,7 +229,7 @@ const KycVerificationList = ({ limit }: KycVerificationListProps) => {
                     <div className="grid grid-cols-2 gap-4 border rounded-lg p-4">
                       <div>
                         <Label className="text-xs text-gray-500">Full Name</Label>
-                        <p className="font-medium">{selectedVerification.name}</p>
+                        <p className="font-medium">{selectedVerification.full_name}</p>
                       </div>
                       <div>
                         <Label className="text-xs text-gray-500">Email</Label>
@@ -210,7 +238,7 @@ const KycVerificationList = ({ limit }: KycVerificationListProps) => {
                       <div>
                         <Label className="text-xs text-gray-500">Submission Date</Label>
                         <p className="font-medium">
-                          {new Date(selectedVerification.submissionDate).toLocaleString()}
+                          {new Date(selectedVerification.submission_date).toLocaleString()}
                         </p>
                       </div>
                       <div>
@@ -218,21 +246,18 @@ const KycVerificationList = ({ limit }: KycVerificationListProps) => {
                         <div className="mt-1">{getStatusBadge(selectedVerification.status)}</div>
                       </div>
                       
-                      {selectedVerification.reviewDate && (
-                        <>
-                          <div>
-                            <Label className="text-xs text-gray-500">Review Date</Label>
-                            <p className="font-medium">
-                              {new Date(selectedVerification.reviewDate).toLocaleString()}
-                            </p>
-                          </div>
-                          {selectedVerification.reviewedBy && (
-                            <div>
-                              <Label className="text-xs text-gray-500">Reviewed By</Label>
-                              <p className="font-medium">{selectedVerification.reviewedBy}</p>
-                            </div>
-                          )}
-                        </>
+                      {selectedVerification.officer_action && (
+                        <div className="col-span-2">
+                          <Label className="text-xs text-gray-500">Officer Action</Label>
+                          <p className="font-medium">{selectedVerification.officer_action}</p>
+                        </div>
+                      )}
+                      
+                      {selectedVerification.rejection_reason && (
+                        <div className="col-span-2">
+                          <Label className="text-xs text-gray-500">Rejection Reason</Label>
+                          <p className="font-medium text-red-600">{selectedVerification.rejection_reason}</p>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -242,17 +267,34 @@ const KycVerificationList = ({ limit }: KycVerificationListProps) => {
               <TabsContent value="documents" className="py-2">
                 <div className="space-y-4">
                   <div>
-                    <h3 className="text-sm font-medium text-gray-500 mb-2">ID Document</h3>
+                    <h3 className="text-sm font-medium text-gray-500 mb-2">ID Front</h3>
                     <div className="border rounded-md overflow-hidden">
-                      <img 
-                        src={selectedVerification.document} 
-                        alt="ID Document" 
-                        className="w-full h-auto"
-                      />
+                      {selectedVerification.id_front ? (
+                        <img 
+                          src={selectedVerification.id_front} 
+                          alt="ID Front" 
+                          className="w-full h-auto"
+                        />
+                      ) : (
+                        <div className="p-4 text-center text-gray-500">No ID front image available</div>
+                      )}
                     </div>
                   </div>
                   
-                  {/* We'd add back document here too if it was available in the data */}
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-500 mb-2">ID Back</h3>
+                    <div className="border rounded-md overflow-hidden">
+                      {selectedVerification.id_back ? (
+                        <img 
+                          src={selectedVerification.id_back} 
+                          alt="ID Back" 
+                          className="w-full h-auto"
+                        />
+                      ) : (
+                        <div className="p-4 text-center text-gray-500">No ID back image available</div>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </TabsContent>
               
@@ -260,18 +302,22 @@ const KycVerificationList = ({ limit }: KycVerificationListProps) => {
                 <div>
                   <h3 className="text-sm font-medium text-gray-500 mb-2">User Selfie</h3>
                   <div className="border rounded-md overflow-hidden flex justify-center">
-                    <img 
-                      src={selectedVerification.photo} 
-                      alt="User Selfie" 
-                      className="max-h-80"
-                    />
+                    {selectedVerification.selfie ? (
+                      <img 
+                        src={selectedVerification.selfie} 
+                        alt="User Selfie" 
+                        className="max-h-80"
+                      />
+                    ) : (
+                      <div className="p-4 text-center text-gray-500">No selfie available</div>
+                    )}
                   </div>
                 </div>
               </TabsContent>
             </Tabs>
             
             <DialogFooter className="gap-2 mt-4">
-              {selectedVerification.status === 'pending' && (
+              {selectedVerification.status.toLowerCase() === 'pending' && (
                 <>
                   <Button
                     variant="outline"
@@ -290,7 +336,7 @@ const KycVerificationList = ({ limit }: KycVerificationListProps) => {
                   </Button>
                 </>
               )}
-              {selectedVerification.status !== 'pending' && (
+              {selectedVerification.status.toLowerCase() !== 'pending' && (
                 <Button
                   onClick={() => setIsDialogOpen(false)}
                 >
