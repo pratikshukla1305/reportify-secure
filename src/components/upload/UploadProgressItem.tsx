@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Image, X } from 'lucide-react';
+import { Video, X } from 'lucide-react';
 
 type UploadProgressItemProps = {
   fileName: string;
@@ -21,7 +21,7 @@ const UploadProgressItem: React.FC<UploadProgressItemProps> = ({
         {preview ? (
           <img src={preview} alt={fileName} className="h-full w-full object-cover" />
         ) : (
-          <Image className="h-5 w-5 text-shield-blue" />
+          <Video className="h-5 w-5 text-shield-blue" />
         )}
       </div>
       <div className="flex-1">

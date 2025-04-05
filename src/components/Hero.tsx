@@ -1,7 +1,7 @@
 
 import React, { useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { Shield, ArrowUp } from 'lucide-react';
+import { Shield, Video, FileText } from 'lucide-react';
 
 const Hero = () => {
   const heroRef = useRef<HTMLDivElement>(null);
@@ -50,17 +50,17 @@ const Hero = () => {
           <div className="text-center lg:text-left">
             <div className="inline-flex items-center px-3 py-1 rounded-full border border-shield-border bg-white shadow-sm mb-6 animate-fade-in">
               <Shield className="h-4 w-4 text-shield-blue mr-2" />
-              <span className="text-xs font-medium">Blockchain + AI Security</span>
+              <span className="text-xs font-medium">AI-Powered Crime Detection</span>
             </div>
             
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-shield-dark mb-6 animate-fade-up" style={{animationDelay: '0.1s'}}>
               <span className="text-shield-blue">Report</span> crimes.<br />
-              <span className="text-shield-blue">Secure</span> evidence.<br />
-              <span className="text-shield-blue">Earn</span> rewards.
+              <span className="text-shield-blue">Analyze</span> evidence.<br />
+              <span className="text-shield-blue">Protect</span> communities.
             </h1>
             
             <p className="text-lg text-gray-600 mb-8 max-w-xl mx-auto lg:mx-0 animate-fade-up" style={{animationDelay: '0.2s'}}>
-              Midshield combines blockchain and AI to revolutionize crime reporting and evidence management, ensuring data integrity while incentivizing public participation.
+              Midshield combines AI and blockchain technology to revolutionize crime reporting and evidence management, ensuring data integrity and sophisticated crime detection.
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start animate-fade-up" style={{animationDelay: '0.3s'}}>
@@ -77,30 +77,34 @@ const Hero = () => {
             <div className="relative w-full max-w-md mx-auto">
               <div className="absolute inset-0 bg-shield-blue rounded-3xl blur-3xl opacity-5 transform -rotate-6"></div>
               <div className="parallax glass-card p-8 relative" data-speed="0.8">
-                <div className="flex justify-between items-center mb-6">
+                {/* Police handshake image */}
+                <div className="h-56 rounded-xl bg-gray-100 overflow-hidden mb-6">
+                  <img 
+                    src="/police-handshake.jpg" 
+                    alt="Police officer handshaking with a citizen" 
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.src = 'https://images.unsplash.com/photo-1582213782179-e0d53f98f2ca?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2670&q=80';
+                    }}
+                  />
+                </div>
+                
+                <div className="flex justify-between items-center mb-4">
                   <div className="flex items-center">
-                    <Shield className="h-8 w-8 text-shield-blue mr-2" />
-                    <span className="text-xl font-semibold">Evidence Vault</span>
-                  </div>
-                  <div className="h-10 w-10 rounded-full bg-shield-blue/10 flex items-center justify-center">
-                    <ArrowUp className="h-5 w-5 text-shield-blue" />
+                    <Shield className="h-6 w-6 text-shield-blue mr-2" />
+                    <span className="text-xl font-semibold">Community Protection</span>
                   </div>
                 </div>
                 
                 <div className="space-y-4">
-                  <div className="h-40 rounded-xl bg-gray-100 shimmer"></div>
-                  <div className="grid grid-cols-3 gap-2">
-                    <div className="h-20 rounded-lg bg-gray-100 shimmer"></div>
-                    <div className="h-20 rounded-lg bg-gray-100 shimmer"></div>
-                    <div className="h-20 rounded-lg bg-gray-100 shimmer"></div>
+                  <div className="text-sm text-gray-600">
+                    Working together to create safer communities through advanced technology and cooperation.
                   </div>
-                  <div className="space-y-2">
-                    <div className="h-4 w-3/4 rounded bg-gray-100 shimmer"></div>
-                    <div className="h-4 w-1/2 rounded bg-gray-100 shimmer"></div>
-                  </div>
+                  
                   <div className="flex justify-end">
                     <Button size="sm" className="bg-shield-blue text-white hover:bg-blue-600 transition-all">
-                      Submit Report
+                      Join Our Effort
                     </Button>
                   </div>
                 </div>
@@ -122,8 +126,8 @@ const Hero = () => {
             
             <div className="absolute -top-6 -left-6 md:-top-10 md:-left-10 parallax" data-speed="1">
               <div className="glass-card p-3 shadow-lg transform -rotate-12">
-                <div className="text-xs font-semibold text-shield-blue">+250 SHIELD</div>
-                <div className="text-[10px] text-gray-500">Reward Earned</div>
+                <div className="text-xs font-semibold text-shield-blue">AI-Powered</div>
+                <div className="text-[10px] text-gray-500">Crime Detection</div>
               </div>
             </div>
           </div>

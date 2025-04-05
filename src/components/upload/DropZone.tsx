@@ -1,6 +1,6 @@
 
 import React, { useRef } from 'react';
-import { Upload } from 'lucide-react';
+import { Video } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 type DropZoneProps = {
@@ -41,9 +41,9 @@ const DropZone: React.FC<DropZoneProps> = ({ onFilesAdded }) => {
       onClick={handleBrowseClick}
     >
       <div className="mx-auto w-16 h-16 rounded-full bg-shield-blue/10 flex items-center justify-center mb-4">
-        <Upload className="h-8 w-8 text-shield-blue" />
+        <Video className="h-8 w-8 text-shield-blue" />
       </div>
-      <p className="text-gray-600 mb-2">Drag and drop video files here</p>
+      <p className="text-gray-600 mb-2">Drag and drop video evidence here</p>
       <p className="text-sm text-gray-500 mb-4">or</p>
       <Button 
         variant="outline" 
@@ -53,7 +53,7 @@ const DropZone: React.FC<DropZoneProps> = ({ onFilesAdded }) => {
           handleBrowseClick();
         }}
       >
-        Browse Files
+        Browse Video Files
       </Button>
       <input
         type="file"

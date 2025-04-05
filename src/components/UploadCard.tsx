@@ -31,7 +31,7 @@ const UploadCard = ({ className }: UploadCardProps) => {
   
   const handleContinueToReport = async () => {
     if (files.length === 0) {
-      toast.error("Please upload at least one file before continuing");
+      toast.error("Please upload at least one video before continuing");
       return;
     }
     
@@ -75,7 +75,7 @@ const UploadCard = ({ className }: UploadCardProps) => {
   return (
     <div className={cn('glass-card p-6', className)}>
       <div className="mb-4 flex items-center justify-between">
-        <h3 className="text-xl font-semibold">Upload Evidence</h3>
+        <h3 className="text-xl font-semibold">Upload Video Evidence</h3>
         <Shield className="h-5 w-5 text-shield-blue" />
       </div>
       
@@ -93,7 +93,7 @@ const UploadCard = ({ className }: UploadCardProps) => {
             />
           ))
         ) : (
-          <p className="text-center text-gray-500">No files uploaded yet</p>
+          <p className="text-center text-gray-500">No videos uploaded yet</p>
         )}
       </div>
       
@@ -103,7 +103,7 @@ const UploadCard = ({ className }: UploadCardProps) => {
           className="bg-shield-blue text-white hover:bg-blue-600 transition-all"
           disabled={isUploading || files.length === 0}
         >
-          {isUploading ? "Uploading..." : "Continue to Report"}
+          {isUploading ? "Processing..." : "Analyze Video Evidence"}
         </Button>
       </div>
     </div>
