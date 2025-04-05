@@ -67,6 +67,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       
       console.log('Sign-in successful:', data.user?.email);
+      
+      // After successful sign-in, manually check the profiles table
+      try {
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('email', email)
+          .single();
+          
+        if (profileError && profileError.code !== 'PGRST116') {
+          console.error('Profile fetch error:', profileError.message);
+        } else {
+          console.log('Profile found:', profileData);
+        }
+      } catch (profileCheckErr: any) {
+        console.error('Profile check error:', profileCheckErr.message);
+      }
+      
       toast.success('Signed in successfully');
       return { error: null };
     } catch (error: any) {
@@ -85,7 +103,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       console.log('Signing up with:', email, fullName);
       
-      // Using signUp method
+      // First, register the user in Supabase Auth
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -110,17 +128,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       console.log('Sign-up successful, user:', data.user?.id);
       
-      // Create profile entry manually if needed
+      // Now insert into your custom profiles table
       if (data.user) {
         try {
+          // Insert into your custom profiles table
           const { error: profileError } = await supabase
             .from('profiles')
             .insert({
-              id: data.user.id,
+              name: fullName,
               email: email,
-              full_name: fullName,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
+              password: password, // Note: In production, you should not store plain passwords
             });
             
           if (profileError) {
@@ -179,11 +196,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error("No user logged in");
       }
       
-      console.log('Getting profile for user:', user.id);
+      console.log('Getting profile for user:', user.email);
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
-        .eq('id', user.id)
+        .eq('email', user.email)
         .single();
         
       if (error) {

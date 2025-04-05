@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -49,13 +50,17 @@ const GetStarted = () => {
     setIsLoading(true);
     
     try {
+      console.log("Attempting to sign up with:", email, fullName);
       const { error } = await signUp(email, password, fullName);
+      
       if (error) {
         console.error("Sign up error:", error.message);
+        toast.error(`Sign up error: ${error.message}`);
       } else {
         console.log("Sign up successful, redirecting to sign in");
         toast.success("Account created successfully! Please verify your email (if required) and sign in.");
-        navigate('/signin');
+        // Add small delay to allow state to update
+        setTimeout(() => navigate('/signin'), 500);
       }
     } catch (err: any) {
       console.error("Unexpected error during sign up:", err);
@@ -158,6 +163,11 @@ const GetStarted = () => {
                     type="submit" 
                     className="w-full bg-shield-blue text-white hover:bg-blue-600 transition-all"
                     disabled={isLoading || !agreeToTerms}
+                    onClick={(e) => {
+                      if (!isLoading && agreeToTerms) {
+                        console.log("Sign up button clicked");
+                      }
+                    }}
                   >
                     {isLoading ? "Creating Account..." : "Create Account"}
                   </Button>

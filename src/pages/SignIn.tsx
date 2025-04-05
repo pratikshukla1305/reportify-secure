@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -38,13 +39,17 @@ const SignIn = () => {
     setIsLoading(true);
     
     try {
+      console.log("Attempting to sign in with:", email);
       const { error } = await signIn(email, password);
+      
       if (error) {
         console.error("Sign-in error:", error.message);
+        toast.error(`Sign-in error: ${error.message}`);
       } else {
         console.log("Sign in successful, redirecting to dashboard");
         toast.success("Sign in successful!");
-        navigate('/dashboard');
+        // Add small delay to allow state to update
+        setTimeout(() => navigate('/dashboard'), 500);
       }
     } catch (err: any) {
       console.error("Unexpected error during sign in:", err);
@@ -158,6 +163,11 @@ const SignIn = () => {
                     type="submit" 
                     className="w-full bg-shield-blue text-white hover:bg-blue-600 transition-all"
                     disabled={isLoading}
+                    onClick={(e) => {
+                      if (!isLoading) {
+                        console.log("Sign in button clicked");
+                      }
+                    }}
                   >
                     {isLoading ? "Signing in..." : "Sign In"}
                   </Button>

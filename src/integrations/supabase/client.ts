@@ -31,10 +31,16 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
   },
 });
 
-// Configure Database Connection (PostgreSQL)
-// Connection details:
+// PostgreSQL Database Configuration
+// These are the PostgreSQL connection details that Supabase uses to connect:
 // user: 'postgres'
 // host: 'localhost'
 // database: 'Law'
 // password: 'Pratik@1305'
 // port: 5432
+//
+// Available Tables:
+// - profiles: User authentication and profile data
+// - sos: Emergency SOS requests with location and messages
+// - help_us: Community reporting system with crime sightings
+// - e_kyc: Know Your Customer verification data and documents
