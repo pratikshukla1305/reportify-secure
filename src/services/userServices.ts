@@ -1,8 +1,9 @@
 
 import { supabase } from '@/integrations/supabase/client';
+import { SOSAlert, KycVerification, Advisory, CriminalProfile, CaseData, CriminalTip } from '@/types/officer';
 
 // SOS Alerts
-export const submitSOSAlert = async (alertData: any) => {
+export const submitSOSAlert = async (alertData: any): Promise<SOSAlert[]> => {
   const { data, error } = await supabase
     .from('sos_alerts')
     .insert([alertData])
@@ -12,10 +13,10 @@ export const submitSOSAlert = async (alertData: any) => {
     throw error;
   }
   
-  return data;
+  return data || [];
 };
 
-export const getUserSOSAlerts = async (userId: string) => {
+export const getUserSOSAlerts = async (userId: string): Promise<SOSAlert[]> => {
   const { data, error } = await supabase
     .from('sos_alerts')
     .select('*')
@@ -26,11 +27,11 @@ export const getUserSOSAlerts = async (userId: string) => {
     throw error;
   }
   
-  return data;
+  return data || [];
 };
 
 // KYC Verification
-export const submitKycVerification = async (verificationData: any) => {
+export const submitKycVerification = async (verificationData: any): Promise<KycVerification[]> => {
   const { data, error } = await supabase
     .from('kyc_verifications')
     .insert([verificationData])
@@ -40,10 +41,10 @@ export const submitKycVerification = async (verificationData: any) => {
     throw error;
   }
   
-  return data;
+  return data || [];
 };
 
-export const getUserKycStatus = async (email: string) => {
+export const getUserKycStatus = async (email: string): Promise<KycVerification | null> => {
   const { data, error } = await supabase
     .from('kyc_verifications')
     .select('*')
@@ -60,7 +61,7 @@ export const getUserKycStatus = async (email: string) => {
 };
 
 // Advisories
-export const getPublicAdvisories = async () => {
+export const getPublicAdvisories = async (): Promise<Advisory[]> => {
   const { data, error } = await supabase
     .from('advisories')
     .select('*')
@@ -70,11 +71,11 @@ export const getPublicAdvisories = async () => {
     throw error;
   }
   
-  return data;
+  return data || [];
 };
 
 // Criminal Profiles
-export const getWantedCriminals = async () => {
+export const getWantedCriminals = async (): Promise<CriminalProfile[]> => {
   const { data, error } = await supabase
     .from('criminal_profiles')
     .select('*')
@@ -84,11 +85,11 @@ export const getWantedCriminals = async () => {
     throw error;
   }
   
-  return data;
+  return data || [];
 };
 
 // Cases
-export const getPublicCases = async () => {
+export const getPublicCases = async (): Promise<CaseData[]> => {
   const { data, error } = await supabase
     .from('cases')
     .select('*')
@@ -98,14 +99,13 @@ export const getPublicCases = async () => {
     throw error;
   }
   
-  return data;
+  return data || [];
 };
 
 // Criminal Tip Submission
-export const submitCriminalTip = async (tipData: any) => {
-  // You would need to create a criminal_tips table for this
+export const submitCriminalTip = async (tipData: any): Promise<CriminalTip[]> => {
   const { data, error } = await supabase
-    .from('criminal_tips') // This table would need to be created
+    .from('criminal_tips')
     .insert([tipData])
     .select();
   
@@ -113,5 +113,5 @@ export const submitCriminalTip = async (tipData: any) => {
     throw error;
   }
   
-  return data;
+  return data || [];
 };

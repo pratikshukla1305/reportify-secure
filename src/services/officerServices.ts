@@ -1,8 +1,15 @@
 
 import { supabase } from '@/integrations/supabase/client';
+import { 
+  SOSAlert, 
+  KycVerification, 
+  Advisory, 
+  CriminalProfile, 
+  CaseData 
+} from '@/types/officer';
 
 // SOS Alerts
-export const getSosAlerts = async () => {
+export const getSosAlerts = async (): Promise<SOSAlert[]> => {
   const { data, error } = await supabase
     .from('sos_alerts')
     .select('*')
@@ -12,10 +19,10 @@ export const getSosAlerts = async () => {
     throw error;
   }
   
-  return data;
+  return data || [];
 };
 
-export const updateSosAlertStatus = async (alertId: string, status: string, dispatchTeam?: string) => {
+export const updateSosAlertStatus = async (alertId: string, status: string, dispatchTeam?: string): Promise<SOSAlert[]> => {
   const updates: any = { status };
   
   if (dispatchTeam) {
@@ -32,11 +39,11 @@ export const updateSosAlertStatus = async (alertId: string, status: string, disp
     throw error;
   }
   
-  return data;
+  return data || [];
 };
 
 // KYC Verifications
-export const getKycVerifications = async () => {
+export const getKycVerifications = async (): Promise<KycVerification[]> => {
   const { data, error } = await supabase
     .from('kyc_verifications')
     .select('*')
@@ -46,10 +53,10 @@ export const getKycVerifications = async () => {
     throw error;
   }
   
-  return data;
+  return data || [];
 };
 
-export const updateKycVerificationStatus = async (id: number, status: string, officerAction?: string) => {
+export const updateKycVerificationStatus = async (id: number, status: string, officerAction?: string): Promise<KycVerification[]> => {
   const updates: any = { status };
   
   if (officerAction) {
@@ -66,11 +73,11 @@ export const updateKycVerificationStatus = async (id: number, status: string, of
     throw error;
   }
   
-  return data;
+  return data || [];
 };
 
 // Advisories
-export const getAdvisories = async () => {
+export const getAdvisories = async (): Promise<Advisory[]> => {
   const { data, error } = await supabase
     .from('advisories')
     .select('*')
@@ -80,10 +87,10 @@ export const getAdvisories = async () => {
     throw error;
   }
   
-  return data;
+  return data || [];
 };
 
-export const createAdvisory = async (advisory: any) => {
+export const createAdvisory = async (advisory: any): Promise<Advisory[]> => {
   const { data, error } = await supabase
     .from('advisories')
     .insert([advisory])
@@ -93,10 +100,10 @@ export const createAdvisory = async (advisory: any) => {
     throw error;
   }
   
-  return data;
+  return data || [];
 };
 
-export const updateAdvisory = async (id: number, advisory: any) => {
+export const updateAdvisory = async (id: number, advisory: any): Promise<Advisory[]> => {
   const { data, error } = await supabase
     .from('advisories')
     .update(advisory)
@@ -107,11 +114,11 @@ export const updateAdvisory = async (id: number, advisory: any) => {
     throw error;
   }
   
-  return data;
+  return data || [];
 };
 
 // Criminal Profiles
-export const getCriminalProfiles = async () => {
+export const getCriminalProfiles = async (): Promise<CriminalProfile[]> => {
   const { data, error } = await supabase
     .from('criminal_profiles')
     .select('*')
@@ -121,10 +128,10 @@ export const getCriminalProfiles = async () => {
     throw error;
   }
   
-  return data;
+  return data || [];
 };
 
-export const createCriminalProfile = async (profile: any) => {
+export const createCriminalProfile = async (profile: any): Promise<CriminalProfile[]> => {
   const { data, error } = await supabase
     .from('criminal_profiles')
     .insert([profile])
@@ -134,10 +141,10 @@ export const createCriminalProfile = async (profile: any) => {
     throw error;
   }
   
-  return data;
+  return data || [];
 };
 
-export const updateCriminalProfile = async (id: number, profile: any) => {
+export const updateCriminalProfile = async (id: number, profile: any): Promise<CriminalProfile[]> => {
   const { data, error } = await supabase
     .from('criminal_profiles')
     .update(profile)
@@ -148,11 +155,11 @@ export const updateCriminalProfile = async (id: number, profile: any) => {
     throw error;
   }
   
-  return data;
+  return data || [];
 };
 
 // Cases for mapping
-export const getCases = async () => {
+export const getCases = async (): Promise<CaseData[]> => {
   const { data, error } = await supabase
     .from('cases')
     .select('*')
@@ -162,10 +169,10 @@ export const getCases = async () => {
     throw error;
   }
   
-  return data;
+  return data || [];
 };
 
-export const createCase = async (caseData: any) => {
+export const createCase = async (caseData: any): Promise<CaseData[]> => {
   const { data, error } = await supabase
     .from('cases')
     .insert([caseData])
@@ -175,10 +182,10 @@ export const createCase = async (caseData: any) => {
     throw error;
   }
   
-  return data;
+  return data || [];
 };
 
-export const updateCase = async (id: number, caseData: any) => {
+export const updateCase = async (id: number, caseData: any): Promise<CaseData[]> => {
   const { data, error } = await supabase
     .from('cases')
     .update(caseData)
@@ -189,5 +196,5 @@ export const updateCase = async (id: number, caseData: any) => {
     throw error;
   }
   
-  return data;
+  return data || [];
 };

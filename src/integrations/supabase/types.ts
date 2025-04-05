@@ -9,6 +9,99 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      advisories: {
+        Row: {
+          advisory_title: string
+          advisory_type: string
+          created_at: string | null
+          detailed_content: string
+          expiry_date: string | null
+          id: number
+          image_url: string | null
+          issue_date: string
+          issuing_authority: string
+          location: string
+          severity_level: string | null
+          short_description: string
+        }
+        Insert: {
+          advisory_title: string
+          advisory_type: string
+          created_at?: string | null
+          detailed_content: string
+          expiry_date?: string | null
+          id?: number
+          image_url?: string | null
+          issue_date: string
+          issuing_authority: string
+          location: string
+          severity_level?: string | null
+          short_description: string
+        }
+        Update: {
+          advisory_title?: string
+          advisory_type?: string
+          created_at?: string | null
+          detailed_content?: string
+          expiry_date?: string | null
+          id?: number
+          image_url?: string | null
+          issue_date?: string
+          issuing_authority?: string
+          location?: string
+          severity_level?: string | null
+          short_description?: string
+        }
+        Relationships: []
+      }
+      cases: {
+        Row: {
+          address: string
+          case_date: string
+          case_id: number
+          case_number: string
+          case_time: string
+          case_type: string
+          created_at: string | null
+          description: string
+          latitude: number | null
+          longitude: number | null
+          region: string
+          reporter_id: string | null
+          status: string | null
+        }
+        Insert: {
+          address: string
+          case_date: string
+          case_id?: number
+          case_number: string
+          case_time: string
+          case_type: string
+          created_at?: string | null
+          description: string
+          latitude?: number | null
+          longitude?: number | null
+          region: string
+          reporter_id?: string | null
+          status?: string | null
+        }
+        Update: {
+          address?: string
+          case_date?: string
+          case_id?: number
+          case_number?: string
+          case_time?: string
+          case_type?: string
+          created_at?: string | null
+          description?: string
+          latitude?: number | null
+          longitude?: number | null
+          region?: string
+          reporter_id?: string | null
+          status?: string | null
+        }
+        Relationships: []
+      }
       crime_reports: {
         Row: {
           description: string | null
@@ -42,6 +135,93 @@ export type Database = {
           status?: string
           title?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      criminal_profiles: {
+        Row: {
+          additional_information: string | null
+          age: number | null
+          case_number: string
+          charges: string
+          created_at: string | null
+          full_name: string
+          height: number | null
+          id: number
+          last_known_location: string
+          photo_url: string | null
+          risk_level: string | null
+          weight: number | null
+        }
+        Insert: {
+          additional_information?: string | null
+          age?: number | null
+          case_number: string
+          charges: string
+          created_at?: string | null
+          full_name: string
+          height?: number | null
+          id?: number
+          last_known_location: string
+          photo_url?: string | null
+          risk_level?: string | null
+          weight?: number | null
+        }
+        Update: {
+          additional_information?: string | null
+          age?: number | null
+          case_number?: string
+          charges?: string
+          created_at?: string | null
+          full_name?: string
+          height?: number | null
+          id?: number
+          last_known_location?: string
+          photo_url?: string | null
+          risk_level?: string | null
+          weight?: number | null
+        }
+        Relationships: []
+      }
+      criminal_tips: {
+        Row: {
+          description: string
+          email: string | null
+          id: number
+          image_url: string | null
+          is_anonymous: boolean | null
+          location: string | null
+          phone: string | null
+          status: string | null
+          subject: string
+          submitter_name: string | null
+          tip_date: string | null
+        }
+        Insert: {
+          description: string
+          email?: string | null
+          id?: number
+          image_url?: string | null
+          is_anonymous?: boolean | null
+          location?: string | null
+          phone?: string | null
+          status?: string | null
+          subject: string
+          submitter_name?: string | null
+          tip_date?: string | null
+        }
+        Update: {
+          description?: string
+          email?: string | null
+          id?: number
+          image_url?: string | null
+          is_anonymous?: boolean | null
+          location?: string | null
+          phone?: string | null
+          status?: string | null
+          subject?: string
+          submitter_name?: string | null
+          tip_date?: string | null
         }
         Relationships: []
       }
@@ -86,6 +266,81 @@ export type Database = {
           },
         ]
       }
+      kyc_verifications: {
+        Row: {
+          created_at: string | null
+          email: string
+          full_name: string
+          id: number
+          id_back: string | null
+          id_front: string | null
+          officer_action: string | null
+          rejection_reason: string | null
+          selfie: string | null
+          status: string | null
+          submission_date: string
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          full_name: string
+          id?: number
+          id_back?: string | null
+          id_front?: string | null
+          officer_action?: string | null
+          rejection_reason?: string | null
+          selfie?: string | null
+          status?: string | null
+          submission_date: string
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          full_name?: string
+          id?: number
+          id_back?: string | null
+          id_front?: string | null
+          officer_action?: string | null
+          rejection_reason?: string | null
+          selfie?: string | null
+          status?: string | null
+          submission_date?: string
+        }
+        Relationships: []
+      }
+      officer_profiles: {
+        Row: {
+          badge_number: string
+          confirm_password: string
+          department: string
+          department_email: string
+          full_name: string
+          id: number
+          password: string
+          phone_number: string
+        }
+        Insert: {
+          badge_number: string
+          confirm_password: string
+          department: string
+          department_email: string
+          full_name: string
+          id?: number
+          password: string
+          phone_number: string
+        }
+        Update: {
+          badge_number?: string
+          confirm_password?: string
+          department?: string
+          department_email?: string
+          full_name?: string
+          id?: number
+          password?: string
+          phone_number?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -110,6 +365,57 @@ export type Database = {
           full_name?: string | null
           id?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      sos_alerts: {
+        Row: {
+          alert_id: string
+          contact_info: string | null
+          contact_user: boolean | null
+          created_at: string | null
+          dispatch_team: string | null
+          latitude: number | null
+          location: string
+          longitude: number | null
+          message: string | null
+          reported_by: string
+          reported_time: string
+          status: string | null
+          urgency_level: string | null
+          voice_recording: string | null
+        }
+        Insert: {
+          alert_id: string
+          contact_info?: string | null
+          contact_user?: boolean | null
+          created_at?: string | null
+          dispatch_team?: string | null
+          latitude?: number | null
+          location: string
+          longitude?: number | null
+          message?: string | null
+          reported_by: string
+          reported_time: string
+          status?: string | null
+          urgency_level?: string | null
+          voice_recording?: string | null
+        }
+        Update: {
+          alert_id?: string
+          contact_info?: string | null
+          contact_user?: boolean | null
+          created_at?: string | null
+          dispatch_team?: string | null
+          latitude?: number | null
+          location?: string
+          longitude?: number | null
+          message?: string | null
+          reported_by?: string
+          reported_time?: string
+          status?: string | null
+          urgency_level?: string | null
+          voice_recording?: string | null
         }
         Relationships: []
       }

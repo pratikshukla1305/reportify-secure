@@ -2,15 +2,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-
-type Officer = {
-  id: number;
-  full_name: string;
-  badge_number: string;
-  department: string;
-  department_email: string;
-  phone_number: string;
-};
+import { Officer } from '@/types/officer';
 
 type OfficerAuthContextType = {
   officer: Officer | null;

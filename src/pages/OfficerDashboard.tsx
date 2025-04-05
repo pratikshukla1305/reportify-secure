@@ -14,6 +14,7 @@ import OfficerCriminalPanel from '@/components/officer/OfficerCriminalPanel';
 import OfficerCaseMap from '@/components/officer/OfficerCaseMap';
 import { getSosAlerts, getKycVerifications, getCriminalProfiles, getCases } from '@/services/officerServices';
 import { useOfficerAuth } from '@/contexts/OfficerAuthContext';
+import { SOSAlert } from '@/types/officer';
 
 const OfficerDashboard = () => {
   const [activeTab, setActiveTab] = useState('dashboard');

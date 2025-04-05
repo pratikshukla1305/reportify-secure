@@ -15,22 +15,10 @@ import { useToast } from '@/components/ui/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
 import { getKycVerifications, updateKycVerificationStatus } from '@/services/officerServices';
+import { KycVerification } from '@/types/officer';
 
 interface KycVerificationListProps {
   limit?: number;
-}
-
-interface KycVerification {
-  id: number;
-  full_name: string;
-  email: string;
-  submission_date: string;
-  status: string;
-  officer_action?: string;
-  id_front?: string;
-  id_back?: string;
-  selfie?: string;
-  rejection_reason?: string;
 }
 
 const KycVerificationList = ({ limit }: KycVerificationListProps) => {

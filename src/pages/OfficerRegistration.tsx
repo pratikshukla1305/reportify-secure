@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -49,7 +50,7 @@ const OfficerRegistration = () => {
             department: formData.department,
             department_email: formData.email,
             phone_number: formData.phone,
-            password: formData.password, // In a real app, this should be hashed
+            password: formData.password,
             confirm_password: formData.confirmPassword
           }
         ])

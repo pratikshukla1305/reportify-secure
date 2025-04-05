@@ -1,28 +1,13 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/components/ui/use-toast';
 import { PhoneCall, MapPin, Clock, AlertTriangle } from 'lucide-react';
 import { getSosAlerts, updateSosAlertStatus } from '@/services/officerServices';
+import { SOSAlert } from '@/types/officer';
 
 interface SOSAlertsListProps {
   limit?: number;
-}
-
-interface SOSAlert {
-  alert_id: string;
-  reported_by: string;
-  contact_info: string;
-  reported_time: string;
-  status: string;
-  location: string;
-  longitude: number;
-  latitude: number;
-  message: string;
-  urgency_level: string;
-  dispatch_team?: string;
-  contact_user: boolean;
 }
 
 const SOSAlertsList: React.FC<SOSAlertsListProps> = ({ limit }) => {
@@ -34,7 +19,6 @@ const SOSAlertsList: React.FC<SOSAlertsListProps> = ({ limit }) => {
     setIsLoading(true);
     try {
       const data = await getSosAlerts();
-      // If limit is provided, slice the data
       const limitedData = limit ? data.slice(0, limit) : data;
       setAlerts(limitedData);
     } catch (error: any) {
@@ -55,7 +39,7 @@ const SOSAlertsList: React.FC<SOSAlertsListProps> = ({ limit }) => {
   const handleStatusUpdate = async (alertId: string, status: string) => {
     try {
       await updateSosAlertStatus(alertId, status);
-      fetchAlerts(); // Refresh the list
+      fetchAlerts();
       toast({
         title: "Status updated",
         description: `Alert status updated to ${status}`,
