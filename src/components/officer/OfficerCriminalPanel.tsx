@@ -4,10 +4,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useToast } from '@/components/ui/use-toast';
+import { toast } from 'sonner';
 import { 
   User, 
   Upload,
+  Loader2
 } from 'lucide-react';
 import { 
   Dialog, 
@@ -23,13 +24,13 @@ import { useOfficerAuth } from '@/contexts/OfficerAuthContext';
 import { CriminalProfile } from '@/types/officer';
 
 const OfficerCriminalPanel = () => {
-  const { toast } = useToast();
   const { officer } = useOfficerAuth();
   const [criminals, setCriminals] = useState<CriminalProfile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
   const [formData, setFormData] = useState({
     full_name: '',
     age: '',
@@ -47,10 +48,8 @@ const OfficerCriminalPanel = () => {
       const data = await getCriminalProfiles();
       setCriminals(data);
     } catch (error: any) {
-      toast({
-        title: "Error fetching criminals",
-        description: error.message,
-        variant: "destructive",
+      toast.error("Error fetching criminals", {
+        description: error.message
       });
     } finally {
       setIsLoading(false);
@@ -64,8 +63,16 @@ const OfficerCriminalPanel = () => {
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
+      console.log("Selected file:", file.name, file.type, file.size);
       setPhotoFile(file);
-      setPhotoPreview(URL.createObjectURL(file));
+      
+      // Create preview URL
+      const previewUrl = URL.createObjectURL(file);
+      setPhotoPreview(previewUrl);
+      
+      toast.success("Photo selected", {
+        description: `File: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`
+      });
     }
   };
 
@@ -79,12 +86,23 @@ const OfficerCriminalPanel = () => {
   };
 
   const handleSubmit = async () => {
+    if (!formData.full_name || !formData.case_number) {
+      toast.error("Required fields missing", {
+        description: "Name and Case Number are required"
+      });
+      return;
+    }
+    
+    setIsUploading(true);
     setIsLoading(true);
+    
     try {
       // Upload photo first if available
       let photoUrl = null;
       if (photoFile && officer) {
+        console.log("Uploading photo...");
         photoUrl = await uploadCriminalPhoto(photoFile, officer.id.toString());
+        console.log("Photo uploaded, URL:", photoUrl);
       }
       
       // Create criminal profile
@@ -101,21 +119,20 @@ const OfficerCriminalPanel = () => {
         photo_url: photoUrl
       });
       
-      toast({
-        title: "Criminal profile created",
-        description: "The profile has been added to the database",
+      toast.success("Criminal profile created", {
+        description: "The profile has been added to the database"
       });
       
       setIsDialogOpen(false);
       resetForm();
       fetchCriminals();
     } catch (error: any) {
-      toast({
-        title: "Error creating profile",
-        description: error.message,
-        variant: "destructive",
+      console.error("Error creating profile:", error);
+      toast.error("Error creating profile", {
+        description: error.message
       });
     } finally {
+      setIsUploading(false);
       setIsLoading(false);
     }
   };
@@ -134,6 +151,12 @@ const OfficerCriminalPanel = () => {
     });
     setPhotoFile(null);
     setPhotoPreview(null);
+    
+    // Clear the file input if it exists
+    const fileInput = document.getElementById('photo-upload') as HTMLInputElement;
+    if (fileInput) {
+      fileInput.value = '';
+    }
   };
 
   return (
@@ -217,7 +240,12 @@ const OfficerCriminalPanel = () => {
         </div>
       )}
 
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+      <Dialog open={isDialogOpen} onOpenChange={(open) => {
+        if (!isUploading) {
+          setIsDialogOpen(open);
+          if (!open) resetForm();
+        }
+      }}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Add New Criminal Profile</DialogTitle>
@@ -254,6 +282,12 @@ const OfficerCriminalPanel = () => {
                     onClick={() => {
                       setPhotoFile(null);
                       setPhotoPreview(null);
+                      
+                      // Clear the file input
+                      const fileInput = document.getElementById('photo-upload') as HTMLInputElement;
+                      if (fileInput) {
+                        fileInput.value = '';
+                      }
                     }}
                   >
                     Clear
@@ -263,22 +297,24 @@ const OfficerCriminalPanel = () => {
             </div>
 
             <div>
-              <Label htmlFor="full_name">Full Name</Label>
+              <Label htmlFor="full_name">Full Name <span className="text-red-500">*</span></Label>
               <Input 
                 id="full_name" 
                 name="full_name" 
                 value={formData.full_name} 
                 onChange={handleInputChange} 
+                required
               />
             </div>
             
             <div>
-              <Label htmlFor="case_number">Case Number</Label>
+              <Label htmlFor="case_number">Case Number <span className="text-red-500">*</span></Label>
               <Input 
                 id="case_number" 
                 name="case_number" 
                 value={formData.case_number} 
                 onChange={handleInputChange} 
+                required
               />
             </div>
             
@@ -368,11 +404,18 @@ const OfficerCriminalPanel = () => {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)} disabled={isLoading}>
+            <Button variant="outline" onClick={() => setIsDialogOpen(false)} disabled={isUploading}>
               Cancel
             </Button>
-            <Button onClick={handleSubmit} disabled={!formData.full_name || !formData.case_number || isLoading}>
-              {isLoading ? 'Adding...' : 'Add Criminal Profile'}
+            <Button onClick={handleSubmit} disabled={!formData.full_name || !formData.case_number || isUploading}>
+              {isUploading ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Adding...
+                </>
+              ) : (
+                'Add Criminal Profile'
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

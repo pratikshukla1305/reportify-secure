@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -18,50 +17,71 @@ import {
   DialogHeader, 
   DialogTitle 
 } from '@/components/ui/dialog';
+import { useOfficerAuth } from '@/contexts/OfficerAuthContext';
 
 const OfficerProfile = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { officer } = useOfficerAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   
-  // Example officer data - in a real app, this would come from authentication/database
-  const [officer, setOfficer] = useState({
-    name: "Officer John Smith",
-    badge: "P-12345",
-    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=150&q=80",
-    department: "City Police Department",
-    rank: "Detective",
-    phone: "+1 (555) 123-4567",
-    email: "john.smith@citypd.gov",
-    address: "123 Central Precinct, Downtown",
-    joinDate: "January 15, 2018",
-    certifications: ["Criminal Investigation", "Crisis Intervention", "Cyber Crime"]
-  });
+  const defaultOfficer = {
+    name: "Loading...",
+    badge: "",
+    avatar: "",
+    department: "",
+    rank: "Officer",
+    phone: "",
+    email: "",
+    address: "",
+    joinDate: "January 1, 2025",
+    certifications: [""]
+  };
+  
+  const [officerData, setOfficerData] = useState(defaultOfficer);
 
-  // Form values for editing
-  const [formValues, setFormValues] = useState({...officer});
+  useEffect(() => {
+    if (officer) {
+      setOfficerData({
+        name: officer.full_name || "Unknown Officer",
+        badge: officer.badge_number || "Unknown",
+        avatar: "", // No avatar in auth data
+        department: officer.department || "Police Department",
+        rank: "Detective", // Default rank
+        phone: officer.phone_number || "",
+        email: officer.department_email || "",
+        address: "Main Precinct", // Default address
+        joinDate: "January 15, 2023", // Default join date
+        certifications: ["Criminal Investigation", "Crisis Intervention", "Cyber Crime"] // Default certifications
+      });
+    }
+  }, [officer]);
+
+  const [formValues, setFormValues] = useState({...officerData});
+  
+  useEffect(() => {
+    setFormValues({...officerData});
+  }, [officerData]);
 
   const handleEditProfile = () => {
     if (isEditing) {
-      // Save the profile changes
-      setOfficer({...formValues});
+      setOfficerData({...formValues});
       setIsEditing(false);
       toast({
         title: "Profile Updated",
         description: "Your profile has been updated successfully.",
       });
     } else {
-      // Enter edit mode
       setIsEditing(true);
     }
   };
 
   const handleCancelEdit = () => {
-    setFormValues({...officer});
+    setFormValues({...officerData});
     setIsEditing(false);
   };
 
@@ -78,7 +98,6 @@ const OfficerProfile = () => {
   };
 
   const handleSubmitPasswordChange = () => {
-    // Validation
     if (!currentPassword || !newPassword || !confirmPassword) {
       toast({
         title: "Error",
@@ -97,13 +116,11 @@ const OfficerProfile = () => {
       return;
     }
 
-    // In a real app, this would send a request to update the password
     toast({
       title: "Password Updated",
       description: "Your password has been changed successfully.",
     });
 
-    // Reset fields and close dialog
     setCurrentPassword('');
     setNewPassword('');
     setConfirmPassword('');
@@ -113,6 +130,18 @@ const OfficerProfile = () => {
   const navigateToSettings = () => {
     navigate('/officer-settings');
   };
+
+  if (!officer) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold mb-2">Please log in</h2>
+          <p className="text-gray-600 mb-4">You need to be logged in to view your profile</p>
+          <Button onClick={() => navigate('/officer-login')}>Go to Login</Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -127,8 +156,8 @@ const OfficerProfile = () => {
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center mb-4 sm:mb-0">
                   <Avatar className="h-20 w-20 mr-4 border-2 border-shield-blue">
-                    <AvatarImage src={officer.avatar} alt={officer.name} />
-                    <AvatarFallback>JS</AvatarFallback>
+                    <AvatarImage src={officerData.avatar} alt={officerData.name} />
+                    <AvatarFallback>{officer.full_name?.split(' ').map(n => n[0]).join('') || 'OF'}</AvatarFallback>
                   </Avatar>
                   <div>
                     {isEditing ? (
@@ -139,13 +168,13 @@ const OfficerProfile = () => {
                         className="text-xl font-bold mb-1"
                       />
                     ) : (
-                      <CardTitle className="text-xl">{officer.name}</CardTitle>
+                      <CardTitle className="text-xl">{officerData.name}</CardTitle>
                     )}
                     <CardDescription>
-                      <Badge className="mt-1">{officer.rank}</Badge>
+                      <Badge className="mt-1">{officerData.rank}</Badge>
                       <div className="flex items-center text-sm text-gray-500 mt-1">
                         <Shield className="h-4 w-4 mr-1" />
-                        Badge: {officer.badge}
+                        Badge: {officerData.badge}
                       </div>
                     </CardDescription>
                   </div>
@@ -189,7 +218,7 @@ const OfficerProfile = () => {
                           />
                         </div>
                       ) : (
-                        <p className="text-sm font-medium">{officer.department}</p>
+                        <p className="text-sm font-medium">{officerData.department}</p>
                       )}
                     </div>
                   </div>
@@ -208,7 +237,7 @@ const OfficerProfile = () => {
                         </div>
                       ) : (
                         <>
-                          <p className="text-sm font-medium">{officer.phone}</p>
+                          <p className="text-sm font-medium">{officerData.phone}</p>
                           <p className="text-xs text-gray-500">Office Phone</p>
                         </>
                       )}
@@ -229,7 +258,7 @@ const OfficerProfile = () => {
                         </div>
                       ) : (
                         <>
-                          <p className="text-sm font-medium">{officer.email}</p>
+                          <p className="text-sm font-medium">{officerData.email}</p>
                           <p className="text-xs text-gray-500">Official Email</p>
                         </>
                       )}
@@ -250,7 +279,7 @@ const OfficerProfile = () => {
                         </div>
                       ) : (
                         <>
-                          <p className="text-sm font-medium">{officer.address}</p>
+                          <p className="text-sm font-medium">{officerData.address}</p>
                           <p className="text-xs text-gray-500">Precinct Address</p>
                         </>
                       )}
@@ -263,7 +292,7 @@ const OfficerProfile = () => {
                   <div className="flex items-start">
                     <Calendar className="h-5 w-5 text-gray-500 mr-2 mt-0.5" />
                     <div>
-                      <p className="text-sm font-medium">{officer.joinDate}</p>
+                      <p className="text-sm font-medium">{officerData.joinDate}</p>
                       <p className="text-xs text-gray-500">Join Date</p>
                     </div>
                   </div>
@@ -272,7 +301,7 @@ const OfficerProfile = () => {
                     <div>
                       <p className="text-sm font-medium">Certifications</p>
                       <div className="flex flex-wrap gap-1 mt-1">
-                        {officer.certifications.map((cert, index) => (
+                        {officerData.certifications.map((cert, index) => (
                           <Badge key={index} variant="secondary" className="text-xs">{cert}</Badge>
                         ))}
                       </div>
@@ -294,7 +323,6 @@ const OfficerProfile = () => {
         </div>
       </div>
 
-      {/* Password Change Dialog */}
       <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>

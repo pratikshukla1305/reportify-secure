@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { v4 as uuidv4 } from 'uuid';
 import { toast } from 'sonner';
@@ -97,7 +96,6 @@ export const createDraftReport = async (userId: string, reportId: string, upload
   }
 };
 
-// Function to handle voice message uploads
 export const uploadVoiceMessage = async (
   audioBlob: Blob, 
   userId: string | undefined, 
@@ -150,7 +148,6 @@ export const uploadVoiceMessage = async (
   }
 };
 
-// Get all evidence for a report
 export const getReportEvidence = async (reportId: string): Promise<any[]> => {
   try {
     const { data, error } = await supabase
@@ -167,7 +164,6 @@ export const getReportEvidence = async (reportId: string): Promise<any[]> => {
   }
 };
 
-// Upload criminal photo
 export const uploadCriminalPhoto = async (
   photoFile: File,
   userId: string | undefined
@@ -178,9 +174,9 @@ export const uploadCriminalPhoto = async (
   }
   
   try {
-    const fileExt = photoFile.name.split('.').pop();
+    const fileExt = photoFile.name.split('.').pop() || 'jpg';
     const fileName = `criminal-${Date.now()}.${fileExt}`;
-    const filePath = `${userId}/criminal-photos/${fileName}`;
+    const filePath = `criminal-photos/${fileName}`;
     
     // Check if evidence bucket exists and create if needed
     const { data: buckets } = await supabase.storage.listBuckets();
@@ -188,26 +184,35 @@ export const uploadCriminalPhoto = async (
     
     if (!evidenceBucketExists) {
       await supabase.storage.createBucket('evidence', {
-        public: false,
+        public: true,
       });
     }
     
+    console.log(`Uploading file: ${filePath}, size: ${photoFile.size} bytes`);
+    
     // Upload photo
-    const { error } = await supabase.storage
+    const { error, data } = await supabase.storage
       .from('evidence')
       .upload(filePath, photoFile, {
         cacheControl: '3600',
-        upsert: false
+        upsert: true
       });
       
-    if (error) throw error;
+    if (error) {
+      console.error('Photo upload error:', error);
+      throw error;
+    }
+    
+    console.log('File uploaded successfully:', data?.path);
     
     // Get public URL
-    const { data } = supabase.storage
+    const { data: urlData } = supabase.storage
       .from('evidence')
       .getPublicUrl(filePath);
       
-    return data.publicUrl;
+    console.log('Generated public URL:', urlData.publicUrl);
+    
+    return urlData.publicUrl;
   } catch (error: any) {
     console.error('Error uploading criminal photo:', error);
     toast.error(`Photo upload failed: ${error.message}`);

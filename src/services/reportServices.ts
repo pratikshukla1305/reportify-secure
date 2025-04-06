@@ -33,7 +33,7 @@ export const submitReportToOfficer = async (reportId: string) => {
       throw error;
     }
     
-    // Create notification in officer_notifications table
+    // Create notification in officer_notifications table using type assertion
     const { error: notificationError } = await supabase
       .from('officer_notifications')
       .insert([

@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { 
   Drawer,
@@ -20,7 +19,7 @@ import {
   Loader2,
   CheckCircle2
 } from 'lucide-react';
-import { toast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { policeStations } from '@/data/policeStations';
 import { calculateDistance } from '@/utils/locationUtils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -101,16 +100,13 @@ const SOSModal = ({ open, onOpenChange, userLocation }: SOSModalProps) => {
       mediaRecorder.start();
       setIsRecording(true);
       
-      toast({
-        title: "Recording started",
-        description: "Speak clearly into your microphone",
+      toast.success("Recording started", {
+        description: "Speak clearly into your microphone"
       });
     } catch (error) {
       console.error("Error accessing microphone:", error);
-      toast({
-        title: "Microphone access denied",
-        description: "Please allow microphone access to record audio messages",
-        variant: "destructive"
+      toast.error("Microphone access denied", {
+        description: "Please allow microphone access to record audio messages"
       });
     }
   };
@@ -120,28 +116,23 @@ const SOSModal = ({ open, onOpenChange, userLocation }: SOSModalProps) => {
       mediaRecorderRef.current.stop();
       setIsRecording(false);
       
-      toast({
-        title: "Recording stopped",
-        description: "Voice message recorded successfully",
+      toast.success("Recording stopped", {
+        description: "Voice message recorded successfully"
       });
     }
   };
 
   const handleSendSOS = async () => {
     if (!userLocation) {
-      toast({
-        title: "Location unavailable",
-        description: "We couldn't determine your location. Please try again.",
-        variant: "destructive"
+      toast.error("Location unavailable", {
+        description: "We couldn't determine your location. Please try again."
       });
       return;
     }
     
     if (!textMessage && !recordedAudio) {
-      toast({
-        title: "No message to send",
-        description: "Please record a voice message or type a text message",
-        variant: "destructive"
+      toast.error("No message to send", {
+        description: "Please record a voice message or type a text message"
       });
       return;
     }
@@ -155,6 +146,7 @@ const SOSModal = ({ open, onOpenChange, userLocation }: SOSModalProps) => {
       // Upload voice recording if available
       if (recordedAudio && user) {
         voiceUrl = await uploadVoiceMessage(recordedAudio, user.id, alertId);
+        console.log("Voice recording uploaded to:", voiceUrl);
       }
       
       // Create SOS alert in database
@@ -170,7 +162,7 @@ const SOSModal = ({ open, onOpenChange, userLocation }: SOSModalProps) => {
           longitude: userLocation.lng,
           latitude: userLocation.lat,
           message: textMessage,
-          voice_recording: voiceUrl, // Now correctly stored as TEXT
+          voice_recording: voiceUrl,
           urgency_level: 'High',
           contact_user: true
         });
@@ -182,9 +174,8 @@ const SOSModal = ({ open, onOpenChange, userLocation }: SOSModalProps) => {
       
       setStatus('sent');
       
-      toast({
-        title: "SOS Alert Sent",
-        description: `Your alert has been sent to ${nearestStation?.name || 'the nearest police station'}`,
+      toast.success("SOS Alert Sent", {
+        description: `Your alert has been sent to ${nearestStation?.name || 'the nearest police station'}`
       });
       
       // Auto-close after showing success
@@ -199,10 +190,8 @@ const SOSModal = ({ open, onOpenChange, userLocation }: SOSModalProps) => {
       console.error("Error sending SOS alert:", error);
       setStatus('error');
       
-      toast({
-        title: "Failed to send SOS",
-        description: `Error: ${error.message}`,
-        variant: "destructive"
+      toast.error("Failed to send SOS", {
+        description: `Error: ${error.message}`
       });
     }
   };
