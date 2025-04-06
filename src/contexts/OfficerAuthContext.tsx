@@ -58,7 +58,7 @@ export const OfficerAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
       // We would use a proper authentication system with hashed passwords
       // This is just for demonstration
       if (data && data.password === password) {
-        const officer: Officer = {
+        const officerData: Officer = {
           id: data.id,
           full_name: data.full_name,
           badge_number: data.badge_number,
@@ -68,11 +68,11 @@ export const OfficerAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
         };
         
         // Store officer data in local storage
-        localStorage.setItem('officer', JSON.stringify(officer));
+        localStorage.setItem('officer', JSON.stringify(officerData));
         
-        setOfficer(officer);
+        setOfficer(officerData);
         setIsAuthenticated(true);
-        toast.success(`Welcome, Officer ${officer.full_name}`);
+        toast.success(`Welcome, Officer ${officerData.full_name}`);
         return { error: null };
       } else {
         toast.error("Invalid credentials");

@@ -5,7 +5,8 @@ import {
   KycVerification, 
   Advisory, 
   CriminalProfile, 
-  CaseData 
+  CaseData,
+  CriminalTip
 } from '@/types/officer';
 
 // SOS Alerts
@@ -190,6 +191,34 @@ export const updateCase = async (id: number, caseData: any): Promise<CaseData[]>
     .from('cases')
     .update(caseData)
     .eq('case_id', id)
+    .select();
+  
+  if (error) {
+    throw error;
+  }
+  
+  return data || [];
+};
+
+// Criminal Tips
+export const getCriminalTips = async (): Promise<CriminalTip[]> => {
+  const { data, error } = await supabase
+    .from('criminal_tips')
+    .select('*')
+    .order('tip_date', { ascending: false });
+  
+  if (error) {
+    throw error;
+  }
+  
+  return data || [];
+};
+
+export const updateCriminalTipStatus = async (id: number, status: string): Promise<CriminalTip[]> => {
+  const { data, error } = await supabase
+    .from('criminal_tips')
+    .update({ status })
+    .eq('id', id)
     .select();
   
   if (error) {
