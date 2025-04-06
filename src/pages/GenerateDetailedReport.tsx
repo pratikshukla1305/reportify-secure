@@ -3,22 +3,32 @@ import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { FileText, Check, RotateCcw, Download, Share2, ArrowLeft, Send } from 'lucide-react';
 import { toast } from 'sonner';
+import { submitReportToOfficer } from '@/services/reportServices';
 
 const GenerateDetailedReport = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [isGenerating, setIsGenerating] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [reportId, setReportId] = useState<string | null>(null);
   
   useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const id = searchParams.get('id');
+    if (id) {
+      setReportId(id);
+    }
+    
     const savedImages = sessionStorage.getItem('uploadedImages');
     if (savedImages) {
       setUploadedImages(JSON.parse(savedImages));
     }
-  }, []);
+  }, [location.search]);
   
   const handleGenerate = () => {
     setIsGenerating(true);
@@ -40,12 +50,29 @@ const GenerateDetailedReport = () => {
     toast.success("Report shared successfully");
   };
   
-  const handleSendToOfficer = () => {
-    // Simulate sending to officer
-    toast.success("Report sent to officer for further processing");
-    setTimeout(() => {
-      navigate("/home");
-    }, 1500);
+  const handleSendToOfficer = async () => {
+    if (!reportId) {
+      toast.error("Report ID not found. Cannot send to officer.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    
+    try {
+      // Send report to officer portal
+      await submitReportToOfficer(reportId);
+      
+      toast.success("Report sent to officer for further processing");
+      
+      setTimeout(() => {
+        navigate("/home");
+      }, 1500);
+    } catch (error) {
+      console.error("Error sending report to officer:", error);
+      toast.error("Failed to send report to officer. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
   
   return (
@@ -81,7 +108,7 @@ const GenerateDetailedReport = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
                 <div>
                   <p className="text-sm text-gray-500 mb-1">Report ID</p>
-                  <p className="font-medium">#1042</p>
+                  <p className="font-medium">{reportId || '#1042'}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-500 mb-1">Incident Type</p>
@@ -152,8 +179,17 @@ const GenerateDetailedReport = () => {
                   <Button 
                     className="bg-green-600 text-white hover:bg-green-700 transition-all"
                     onClick={handleSendToOfficer}
+                    disabled={isSubmitting}
                   >
-                    <Send className="mr-2 h-4 w-4" /> Send to Officer
+                    {isSubmitting ? (
+                      <>
+                        <RotateCcw className="mr-2 h-4 w-4 animate-spin" /> Sending...
+                      </>
+                    ) : (
+                      <>
+                        <Send className="mr-2 h-4 w-4" /> Send to Officer
+                      </>
+                    )}
                   </Button>
                 </div>
               </div>

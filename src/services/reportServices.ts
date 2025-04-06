@@ -1,0 +1,89 @@
+
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+
+// Submit a report to officer
+export const submitReportToOfficer = async (reportId: string) => {
+  try {
+    const { data, error } = await supabase
+      .from('crime_reports')
+      .update({
+        status: 'submitted',
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', reportId)
+      .select('*');
+    
+    if (error) {
+      throw error;
+    }
+    
+    // Create notification in officer_notifications table
+    await supabase
+      .from('officer_notifications')
+      .insert([
+        {
+          report_id: reportId,
+          notification_type: 'new_report',
+          is_read: false,
+          message: 'New crime report submitted for review'
+        }
+      ]);
+    
+    return data;
+  } catch (error: any) {
+    console.error('Error submitting report to officer:', error);
+    toast.error(`Failed to submit report: ${error.message}`);
+    throw error;
+  }
+};
+
+// Get reports for officer
+export const getOfficerReports = async () => {
+  try {
+    const { data, error } = await supabase
+      .from('crime_reports')
+      .select('*, evidence(*)')
+      .in('status', ['submitted', 'processing', 'completed'])
+      .order('updated_at', { ascending: false });
+    
+    if (error) {
+      throw error;
+    }
+    
+    return data;
+  } catch (error: any) {
+    console.error('Error fetching officer reports:', error);
+    throw error;
+  }
+};
+
+// Update report status by officer
+export const updateReportStatus = async (reportId: string, status: string, officerNotes?: string) => {
+  try {
+    const updateData: any = {
+      status,
+      updated_at: new Date().toISOString()
+    };
+    
+    if (officerNotes) {
+      updateData.officer_notes = officerNotes;
+    }
+    
+    const { data, error } = await supabase
+      .from('crime_reports')
+      .update(updateData)
+      .eq('id', reportId)
+      .select();
+    
+    if (error) {
+      throw error;
+    }
+    
+    return data;
+  } catch (error: any) {
+    console.error('Error updating report status:', error);
+    toast.error(`Failed to update status: ${error.message}`);
+    throw error;
+  }
+};

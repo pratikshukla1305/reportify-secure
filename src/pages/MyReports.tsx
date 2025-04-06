@@ -1,16 +1,16 @@
-
 import React, { useEffect, useState } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { Shield, File, Plus, ArrowRight, FileText, CalendarDays, Map, Info } from 'lucide-react';
+import { Shield, File, Plus, ArrowRight, FileText, CalendarDays, Map, Info, Clock, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { format } from 'date-fns';
 
 const MyReports = () => {
   const { user, isLoading } = useAuth();
@@ -34,7 +34,7 @@ const MyReports = () => {
         setIsLoadingReports(true);
         const { data, error } = await supabase
           .from('crime_reports')
-          .select('*')
+          .select('*, evidence(*)')
           .eq('user_id', user.id)
           .order('report_date', { ascending: false });
 
@@ -49,7 +49,49 @@ const MyReports = () => {
     };
 
     fetchReports();
-  }, [user]);
+
+    // Set up real-time subscription for report status updates
+    if (user) {
+      const channel = supabase
+        .channel('report-updates')
+        .on(
+          'postgres_changes',
+          { 
+            event: 'UPDATE', 
+            schema: 'public', 
+            table: 'crime_reports',
+            filter: `user_id=eq.${user.id}` 
+          },
+          (payload) => {
+            // Update the report in state when it changes
+            setReports(prevReports => 
+              prevReports.map(report => 
+                report.id === payload.new.id ? { ...report, ...payload.new } : report
+              )
+            );
+            
+            // Update filtered reports too
+            setFilteredReports(prevFiltered => {
+              if (activeTab === 'all') {
+                return prevFiltered.map(report => 
+                  report.id === payload.new.id ? { ...report, ...payload.new } : report
+                );
+              } else {
+                // For filtered tabs, we need to keep only matching status
+                return prevFiltered
+                  .map(report => report.id === payload.new.id ? { ...report, ...payload.new } : report)
+                  .filter(report => activeTab === 'all' || report.status === activeTab);
+              }
+            });
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
+  }, [user, activeTab]);
 
   const handleTabChange = (value: string) => {
     setActiveTab(value);
@@ -69,10 +111,25 @@ const MyReports = () => {
         return <Badge variant="outline" className="text-blue-600 bg-blue-50 border-blue-200">Submitted</Badge>;
       case 'processing':
         return <Badge variant="outline" className="text-orange-600 bg-orange-50 border-orange-200">Processing</Badge>;
-      case 'closed':
-        return <Badge variant="outline" className="text-green-600 bg-green-50 border-green-200">Closed</Badge>;
+      case 'completed':
+        return <Badge variant="outline" className="text-green-600 bg-green-50 border-green-200">Completed</Badge>;
       default:
         return <Badge variant="outline">Unknown</Badge>;
+    }
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'draft':
+        return <File className="h-4 w-4" />;
+      case 'submitted':
+        return <FileText className="h-4 w-4" />;
+      case 'processing':
+        return <Clock className="h-4 w-4" />;
+      case 'completed':
+        return <CheckCircle className="h-4 w-4" />;
+      default:
+        return <Info className="h-4 w-4" />;
     }
   };
 
@@ -117,7 +174,7 @@ const MyReports = () => {
               <TabsTrigger value="draft">Drafts</TabsTrigger>
               <TabsTrigger value="submitted">Submitted</TabsTrigger>
               <TabsTrigger value="processing">Processing</TabsTrigger>
-              <TabsTrigger value="closed">Closed</TabsTrigger>
+              <TabsTrigger value="completed">Completed</TabsTrigger>
             </TabsList>
             
             <TabsContent value={activeTab}>
@@ -142,10 +199,41 @@ const MyReports = () => {
                               {report.description || 'No description provided.'}
                             </p>
                             
+                            {report.officer_notes && (
+                              <div className="bg-blue-50 p-3 rounded-md mb-4">
+                                <p className="text-xs font-medium text-blue-700 mb-1">Officer Notes:</p>
+                                <p className="text-sm text-gray-700">{report.officer_notes}</p>
+                              </div>
+                            )}
+
+                            {report.evidence && report.evidence.length > 0 && (
+                              <div className="mb-4">
+                                <p className="text-xs text-gray-500 uppercase mb-2">Evidence</p>
+                                <div className="grid grid-cols-4 gap-2">
+                                  {report.evidence.slice(0, 4).map((item: any, idx: number) => (
+                                    <div key={idx} className="aspect-square relative rounded-md overflow-hidden bg-gray-100">
+                                      {item.storage_path && (
+                                        <img
+                                          src={item.storage_path}
+                                          alt={`Evidence ${idx + 1}`}
+                                          className="w-full h-full object-cover"
+                                        />
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                                {report.evidence.length > 4 && (
+                                  <p className="text-xs text-gray-500 mt-1">
+                                    +{report.evidence.length - 4} more items
+                                  </p>
+                                )}
+                              </div>
+                            )}
+                            
                             <div className="flex flex-wrap gap-4 text-sm text-gray-500">
                               <div className="flex items-center">
                                 <CalendarDays className="h-4 w-4 mr-1" />
-                                {new Date(report.report_date).toLocaleDateString()}
+                                {format(new Date(report.report_date), 'MMM dd, yyyy')}
                               </div>
                               
                               {report.location && (
@@ -165,6 +253,9 @@ const MyReports = () => {
                           </div>
                           
                           <div className="bg-gray-50 p-6 flex flex-col justify-center items-center sm:w-48">
+                            <div className="flex items-center justify-center w-10 h-10 rounded-full bg-gray-100 mb-3">
+                              {getStatusIcon(report.status)}
+                            </div>
                             <Link to={`/view-draft-report?id=${report.id}`}>
                               <Button variant="outline" className="whitespace-nowrap">
                                 View Details

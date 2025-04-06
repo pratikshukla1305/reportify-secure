@@ -3,7 +3,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { v4 as uuidv4 } from 'uuid';
 import { toast } from 'sonner';
 
-export const uploadFilesToSupabase = async (files: File[], userId: string | undefined): Promise<string[]> => {
+export const uploadFilesToSupabase = async (
+  files: File[], 
+  userId: string | undefined, 
+  fileType: 'image' | 'video' | 'audio' = 'video'
+): Promise<string[]> => {
   if (!userId) {
     toast.error("You must be logged in to upload files");
     return [];
@@ -14,20 +18,20 @@ export const uploadFilesToSupabase = async (files: File[], userId: string | unde
   const reportId = uuidv4();
   const uploadedUrls: string[] = [];
   
-  // Check if evidence bucket exists
-  const { data: buckets } = await supabase.storage.listBuckets();
-  const evidenceBucketExists = buckets?.some(bucket => bucket.name === 'evidence');
-  
-  if (!evidenceBucketExists) {
-    // Create the bucket if it doesn't exist
-    await supabase.storage.createBucket('evidence', {
-      public: false,
-    });
-  }
-  
-  // Upload each file
-  for (const [index, file] of files.entries()) {
-    try {
+  try {
+    // Check if evidence bucket exists
+    const { data: buckets } = await supabase.storage.listBuckets();
+    const evidenceBucketExists = buckets?.some(bucket => bucket.name === 'evidence');
+    
+    if (!evidenceBucketExists) {
+      // Create the bucket if it doesn't exist
+      await supabase.storage.createBucket('evidence', {
+        public: false,
+      });
+    }
+    
+    // Upload each file
+    for (const [index, file] of files.entries()) {
       const fileExt = file.name.split('.').pop();
       const fileName = `${reportId}-${index}.${fileExt}`;
       const filePath = `${userId}/${fileName}`;
@@ -48,13 +52,26 @@ export const uploadFilesToSupabase = async (files: File[], userId: string | unde
         
       uploadedUrls.push(data.publicUrl);
       
-    } catch (error: any) {
-      console.error('Error uploading file:', error);
-      toast.error(`Error uploading ${file.name}: ${error.message}`);
+      // Create evidence record
+      await supabase
+        .from('evidence')
+        .insert({
+          user_id: userId,
+          report_id: reportId,
+          storage_path: data.publicUrl,
+          type: fileType,
+          title: file.name,
+          description: `Auto-uploaded ${fileType} evidence`
+        });
     }
+    
+    // Return report ID along with URLs
+    return uploadedUrls;
+  } catch (error: any) {
+    console.error('Error uploading files:', error);
+    toast.error(`Upload failed: ${error.message}`);
+    return [];
   }
-  
-  return uploadedUrls;
 };
 
 export const createDraftReport = async (userId: string, reportId: string, uploadedUrls: string[]): Promise<boolean> => {
@@ -65,29 +82,84 @@ export const createDraftReport = async (userId: string, reportId: string, upload
         id: reportId,
         user_id: userId,
         title: "Draft Report",
-        status: "draft"
+        status: "draft",
+        report_date: new Date().toISOString(),
+        is_anonymous: false
       });
       
     if (error) throw error;
-    
-    // Insert evidence records
-    for (const url of uploadedUrls) {
-      const { error: evidenceError } = await supabase
-        .from('evidence')
-        .insert({
-          report_id: reportId,
-          user_id: userId,
-          storage_path: url,
-          type: 'video'
-        });
-        
-      if (evidenceError) throw evidenceError;
-    }
     
     return true;
   } catch (error: any) {
     console.error('Error creating report:', error);
     toast.error(`Error: ${error.message}`);
     return false;
+  }
+};
+
+// Function to handle voice message uploads
+export const uploadVoiceMessage = async (
+  audioBlob: Blob, 
+  userId: string | undefined, 
+  alertId: string
+): Promise<string | null> => {
+  if (!userId) {
+    toast.error("You must be logged in to upload voice messages");
+    return null;
+  }
+  
+  try {
+    const fileExt = 'mp3';
+    const fileName = `voice-${alertId}-${Date.now()}.${fileExt}`;
+    const filePath = `${userId}/voice/${fileName}`;
+    
+    // Check if evidence bucket exists and create if needed
+    const { data: buckets } = await supabase.storage.listBuckets();
+    const evidenceBucketExists = buckets?.some(bucket => bucket.name === 'evidence');
+    
+    if (!evidenceBucketExists) {
+      await supabase.storage.createBucket('evidence', {
+        public: false,
+      });
+    }
+    
+    // Upload voice recording
+    const { error } = await supabase.storage
+      .from('evidence')
+      .upload(filePath, audioBlob, {
+        contentType: 'audio/mpeg',
+        cacheControl: '3600',
+        upsert: false
+      });
+      
+    if (error) throw error;
+    
+    // Get public URL
+    const { data } = supabase.storage
+      .from('evidence')
+      .getPublicUrl(filePath);
+      
+    return data.publicUrl;
+  } catch (error: any) {
+    console.error('Error uploading voice message:', error);
+    toast.error(`Voice upload failed: ${error.message}`);
+    return null;
+  }
+};
+
+// Get all evidence for a report
+export const getReportEvidence = async (reportId: string): Promise<any[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('evidence')
+      .select('*')
+      .eq('report_id', reportId);
+      
+    if (error) throw error;
+    
+    return data || [];
+  } catch (error: any) {
+    console.error('Error fetching evidence:', error);
+    return [];
   }
 };

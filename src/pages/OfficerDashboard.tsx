@@ -1,332 +1,173 @@
 
-import React, { useState, useEffect } from 'react';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Bell, Users, FileText, MapPin, AlertTriangle, Megaphone } from 'lucide-react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import React, { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useOfficerAuth } from '@/contexts/OfficerAuthContext';
 import OfficerNavbar from '@/components/officer/OfficerNavbar';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Shield, UserCheck, FileWarning, Bell, AlertTriangle, Users, Map } from 'lucide-react';
 import SOSAlertsList from '@/components/officer/SOSAlertsList';
 import KycVerificationList from '@/components/officer/KycVerificationList';
-import OfficerAdvisoryPanel from '@/components/officer/OfficerAdvisoryPanel';
 import OfficerCriminalPanel from '@/components/officer/OfficerCriminalPanel';
 import OfficerCaseMap from '@/components/officer/OfficerCaseMap';
-import { getSosAlerts, getKycVerifications, getCriminalProfiles, getCases } from '@/services/officerServices';
-import { useOfficerAuth } from '@/contexts/OfficerAuthContext';
-import { SOSAlert } from '@/types/officer';
+import ReportsList from '@/components/officer/ReportsList';
 
 const OfficerDashboard = () => {
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const { officer, isAuthenticated } = useOfficerAuth();
   const navigate = useNavigate();
-  const location = useLocation();
-  const { officer } = useOfficerAuth();
-  
-  // Fetch data using React Query
-  const { data: sosAlerts = [] } = useQuery({
-    queryKey: ['sosAlerts'],
-    queryFn: getSosAlerts,
-  });
-  
-  const { data: kycVerifications = [] } = useQuery({
-    queryKey: ['kycVerifications'],
-    queryFn: getKycVerifications,
-  });
-  
-  const { data: criminalProfiles = [] } = useQuery({
-    queryKey: ['criminalProfiles'],
-    queryFn: getCriminalProfiles,
-  });
-  
-  const { data: casesData = [] } = useQuery({
-    queryKey: ['cases'],
-    queryFn: getCases,
-  });
-  
-  // Calculate notifications
-  const notifications = {
-    sos: sosAlerts.filter(alert => alert.status === 'New').length,
-    kyc: kycVerifications.filter(verification => verification.status === 'Pending').length,
-    tips: 0, // You would need to implement criminal tips functionality
-    reports: casesData.filter(caseItem => caseItem.status === 'Open').length,
-  };
-  
-  // Get the tab from URL query parameter
+
   useEffect(() => {
-    const queryParams = new URLSearchParams(location.search);
-    const tabParam = queryParams.get('tab');
-    
-    if (tabParam) {
-      setActiveTab(tabParam);
-    } else {
-      setActiveTab('dashboard');
+    if (!isAuthenticated) {
+      navigate('/officer-login');
     }
-  }, [location.search]);
-
-  // Update the URL when the active tab changes
-  const handleTabChange = (value: string) => {
-    setActiveTab(value);
-    navigate(`/officer-dashboard${value !== 'dashboard' ? `?tab=${value}` : ''}`);
-  };
-
-  if (!officer) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-xl font-bold mb-2">Access Denied</h1>
-          <p className="text-gray-600">Please login to access the officer dashboard</p>
-        </div>
-      </div>
-    );
-  }
+  }, [isAuthenticated, navigate]);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-100">
       <OfficerNavbar />
       
-      <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-16">
-        <h1 className="text-2xl font-bold mb-6">Officer Portal</h1>
-        
-        {/* Dashboard Overview Cards */}
-        <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8 ${activeTab !== 'dashboard' ? 'hidden' : ''}`}>
-          <Card className="hover:shadow-md transition-shadow">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base font-medium flex items-center justify-between">
-                SOS Alerts
-                {notifications.sos > 0 && (
-                  <Badge variant="destructive" className="ml-2">{notifications.sos} New</Badge>
-                )}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between">
-                <div className="text-3xl font-bold">{notifications.sos}</div>
-                <div className="p-2 bg-red-100 rounded-full">
-                  <AlertTriangle className="h-6 w-6 text-red-600" />
-                </div>
-              </div>
-            </CardContent>
-            <CardFooter className="pt-0">
-              <button 
-                className="text-sm text-blue-600 hover:underline"
-                onClick={() => handleTabChange('sos')}
-              >
-                View alerts
-              </button>
-            </CardFooter>
-          </Card>
-          
-          <Card className="hover:shadow-md transition-shadow">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base font-medium flex items-center justify-between">
-                KYC Verifications
-                {notifications.kyc > 0 && (
-                  <Badge variant="default" className="ml-2">{notifications.kyc} Pending</Badge>
-                )}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between">
-                <div className="text-3xl font-bold">{notifications.kyc}</div>
-                <div className="p-2 bg-blue-100 rounded-full">
-                  <Users className="h-6 w-6 text-blue-600" />
-                </div>
-              </div>
-            </CardContent>
-            <CardFooter className="pt-0">
-              <button 
-                className="text-sm text-blue-600 hover:underline"
-                onClick={() => handleTabChange('kyc')}
-              >
-                Verify identities
-              </button>
-            </CardFooter>
-          </Card>
-          
-          <Card className="hover:shadow-md transition-shadow">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base font-medium flex items-center justify-between">
-                Criminal Profiles
-                {criminalProfiles.length > 0 && (
-                  <Badge variant="outline" className="ml-2">{criminalProfiles.length} Total</Badge>
-                )}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between">
-                <div className="text-3xl font-bold">{criminalProfiles.length}</div>
-                <div className="p-2 bg-green-100 rounded-full">
-                  <Bell className="h-6 w-6 text-green-600" />
-                </div>
-              </div>
-            </CardContent>
-            <CardFooter className="pt-0">
-              <button 
-                className="text-sm text-blue-600 hover:underline"
-                onClick={() => handleTabChange('criminals')}
-              >
-                Manage profiles
-              </button>
-            </CardFooter>
-          </Card>
-          
-          <Card className="hover:shadow-md transition-shadow">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base font-medium flex items-center justify-between">
-                Case Reports
-                {notifications.reports > 0 && (
-                  <Badge variant="secondary" className="ml-2">{notifications.reports} Open</Badge>
-                )}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between">
-                <div className="text-3xl font-bold">{casesData.length}</div>
-                <div className="p-2 bg-purple-100 rounded-full">
-                  <FileText className="h-6 w-6 text-purple-600" />
-                </div>
-              </div>
-            </CardContent>
-            <CardFooter className="pt-0">
-              <button 
-                className="text-sm text-blue-600 hover:underline"
-                onClick={() => handleTabChange('cases')}
-              >
-                View cases
-              </button>
-            </CardFooter>
-          </Card>
+      <div className="container mx-auto px-4 py-8 pt-24">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold">Officer Dashboard</h1>
+          <p className="text-gray-600">
+            Welcome back, Officer {officer?.full_name || ''}
+          </p>
         </div>
         
-        {/* Main Tabs Interface */}
-        <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-          <TabsList className="grid grid-cols-6 mb-8">
-            <TabsTrigger value="dashboard" className="data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700">
-              Dashboard
-            </TabsTrigger>
-            <TabsTrigger value="sos" className="data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700">
-              SOS Alerts
-            </TabsTrigger>
-            <TabsTrigger value="kyc" className="data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700">
-              KYC Verification
-            </TabsTrigger>
-            <TabsTrigger value="advisories" className="data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700">
-              Advisories
-            </TabsTrigger>
-            <TabsTrigger value="criminals" className="data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700">
-              Criminal Profiles
-            </TabsTrigger>
-            <TabsTrigger value="cases" className="data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700">
-              Case Mapping
-            </TabsTrigger>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center">
+                <AlertTriangle className="mr-2 h-5 w-5 text-red-500" />
+                Alerts
+              </CardTitle>
+              <CardDescription>
+                Handle emergency SOS alerts
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-bold">12</p>
+              <p className="text-sm text-red-500">3 high priority</p>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center">
+                <UserCheck className="mr-2 h-5 w-5 text-blue-500" />
+                KYC Verifications
+              </CardTitle>
+              <CardDescription>
+                Pending verifications
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-bold">8</p>
+              <p className="text-sm text-gray-500">Last updated 1h ago</p>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center">
+                <FileWarning className="mr-2 h-5 w-5 text-yellow-500" />
+                Reports
+              </CardTitle>
+              <CardDescription>
+                Citizen-submitted reports
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-bold">17</p>
+              <p className="text-sm text-gray-500">5 submitted today</p>
+            </CardContent>
+          </Card>
+        </div>
+
+        <Tabs defaultValue="alerts" className="mb-8">
+          <TabsList className="w-full max-w-md grid grid-cols-5">
+            <TabsTrigger value="alerts">SOS Alerts</TabsTrigger>
+            <TabsTrigger value="kyc">KYC</TabsTrigger>
+            <TabsTrigger value="reports">Reports</TabsTrigger>
+            <TabsTrigger value="criminals">Criminals</TabsTrigger>
+            <TabsTrigger value="map">Map</TabsTrigger>
           </TabsList>
           
-          {/* Dashboard Tab Content */}
-          <TabsContent value="dashboard" className="mt-0">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div className="pt-4">
+            <TabsContent value="alerts">
               <Card>
                 <CardHeader>
                   <CardTitle>Recent SOS Alerts</CardTitle>
-                  <CardDescription>Latest emergency alerts from citizens</CardDescription>
+                  <CardDescription>
+                    Manage and respond to emergency alerts from citizens
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <SOSAlertsList limit={3} />
+                  <SOSAlertsList limit={5} />
                 </CardContent>
-                <CardFooter>
-                  <button 
-                    className="text-sm text-blue-600 hover:underline"
-                    onClick={() => handleTabChange('sos')}
-                  >
-                    View all alerts
-                  </button>
-                </CardFooter>
               </Card>
-              
+            </TabsContent>
+            
+            <TabsContent value="kyc">
               <Card>
                 <CardHeader>
-                  <CardTitle>Pending KYC Verifications</CardTitle>
-                  <CardDescription>User identities waiting for verification</CardDescription>
+                  <CardTitle>KYC Verifications</CardTitle>
+                  <CardDescription>
+                    Review and approve user identity verification requests
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <KycVerificationList limit={3} />
+                  <KycVerificationList limit={5} />
                 </CardContent>
-                <CardFooter>
-                  <button 
-                    className="text-sm text-blue-600 hover:underline"
-                    onClick={() => handleTabChange('kyc')}
-                  >
-                    View all verifications
-                  </button>
-                </CardFooter>
               </Card>
-            </div>
-          </TabsContent>
-          
-          {/* SOS Alerts Tab */}
-          <TabsContent value="sos" className="mt-0">
-            <Card>
-              <CardHeader>
-                <CardTitle>Emergency SOS Alerts</CardTitle>
-                <CardDescription>Manage and respond to citizen emergency requests</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <SOSAlertsList />
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
-          {/* KYC Verification Tab */}
-          <TabsContent value="kyc" className="mt-0">
-            <Card>
-              <CardHeader>
-                <CardTitle>User KYC Verification</CardTitle>
-                <CardDescription>Verify user identities and documentation</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <KycVerificationList />
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
-          {/* Advisories Tab */}
-          <TabsContent value="advisories" className="mt-0">
-            <Card>
-              <CardHeader>
-                <CardTitle>Manage Advisories</CardTitle>
-                <CardDescription>Create and manage public safety advisories</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <OfficerAdvisoryPanel />
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
-          {/* Criminal Profiles Tab */}
-          <TabsContent value="criminals" className="mt-0">
-            <Card>
-              <CardHeader>
-                <CardTitle>Criminal Database Management</CardTitle>
-                <CardDescription>Manage wanted individuals and user tips</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <OfficerCriminalPanel />
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
-          {/* Case Mapping Tab */}
-          <TabsContent value="cases" className="mt-0">
-            <Card>
-              <CardHeader>
-                <CardTitle>Case Mapping</CardTitle>
-                <CardDescription>Update case information and location data</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <OfficerCaseMap />
-              </CardContent>
-            </Card>
-          </TabsContent>
+            </TabsContent>
+            
+            <TabsContent value="reports">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Citizen Reports</CardTitle>
+                  <CardDescription>
+                    Review and process reports submitted by citizens
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ReportsList limit={5} />
+                </CardContent>
+              </Card>
+            </TabsContent>
+            
+            <TabsContent value="criminals">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Criminal Profiles</CardTitle>
+                  <CardDescription>
+                    Manage wanted criminal profiles and tips
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <OfficerCriminalPanel />
+                </CardContent>
+              </Card>
+            </TabsContent>
+            
+            <TabsContent value="map">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Crime Map</CardTitle>
+                  <CardDescription>
+                    View geographical distribution of crime reports
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <div className="h-[500px]">
+                    <OfficerCaseMap />
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </div>
         </Tabs>
+
       </div>
     </div>
   );

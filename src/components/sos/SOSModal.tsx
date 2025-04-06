@@ -23,6 +23,10 @@ import {
 import { toast } from '@/hooks/use-toast';
 import { policeStations } from '@/data/policeStations';
 import { calculateDistance } from '@/utils/locationUtils';
+import { useAuth } from '@/contexts/AuthContext';
+import { v4 as uuidv4 } from 'uuid';
+import { supabase } from '@/integrations/supabase/client';
+import { uploadVoiceMessage } from '@/utils/uploadUtils';
 
 interface SOSModalProps {
   open: boolean;
@@ -31,8 +35,10 @@ interface SOSModalProps {
 }
 
 const SOSModal = ({ open, onOpenChange, userLocation }: SOSModalProps) => {
+  const { user } = useAuth();
   const [isRecording, setIsRecording] = useState(false);
   const [recordedAudio, setRecordedAudio] = useState<Blob | null>(null);
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [textMessage, setTextMessage] = useState('');
   const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
   const [nearestStation, setNearestStation] = useState<any | null>(null);
@@ -83,6 +89,10 @@ const SOSModal = ({ open, onOpenChange, userLocation }: SOSModalProps) => {
       mediaRecorder.onstop = () => {
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/mp3' });
         setRecordedAudio(audioBlob);
+        
+        // Create URL for preview
+        const url = URL.createObjectURL(audioBlob);
+        setAudioUrl(url);
         
         // Stop all tracks
         stream.getTracks().forEach(track => track.stop());
@@ -138,8 +148,35 @@ const SOSModal = ({ open, onOpenChange, userLocation }: SOSModalProps) => {
     
     setStatus('sending');
     
-    // Simulate sending SOS (in a real app, this would call an API)
-    setTimeout(() => {
+    try {
+      const alertId = uuidv4();
+      let voiceUrl = null;
+      
+      // Upload voice recording if available
+      if (recordedAudio && user) {
+        voiceUrl = await uploadVoiceMessage(recordedAudio, user.id, alertId);
+      }
+      
+      // Create SOS alert in database
+      const { error } = await supabase
+        .from('sos_alerts')
+        .insert({
+          alert_id: alertId,
+          reported_by: user?.user_metadata?.full_name || 'Anonymous User',
+          contact_info: user?.email || null,
+          reported_time: new Date().toISOString(),
+          status: 'New',
+          location: nearestStation?.name || 'Unknown location',
+          longitude: userLocation.lng,
+          latitude: userLocation.lat,
+          message: textMessage,
+          voice_recording: voiceUrl, // Store URL to the voice recording
+          urgency_level: 'High',
+          contact_user: true
+        });
+        
+      if (error) throw error;
+      
       setStatus('sent');
       
       toast({
@@ -153,8 +190,18 @@ const SOSModal = ({ open, onOpenChange, userLocation }: SOSModalProps) => {
         setStatus('idle');
         setTextMessage('');
         setRecordedAudio(null);
+        setAudioUrl(null);
       }, 3000);
-    }, 2000);
+    } catch (error: any) {
+      console.error("Error sending SOS alert:", error);
+      setStatus('error');
+      
+      toast({
+        title: "Failed to send SOS",
+        description: `Error: ${error.message}`,
+        variant: "destructive"
+      });
+    }
   };
 
   return (
@@ -231,11 +278,19 @@ const SOSModal = ({ open, onOpenChange, userLocation }: SOSModalProps) => {
                 <div className="flex-1 bg-green-50 p-2 rounded-lg flex items-center">
                   <CheckCircle2 className="h-4 w-4 text-green-600 mr-2" />
                   <span className="text-sm">Voice message recorded</span>
+                  {audioUrl && (
+                    <audio controls className="ml-2 h-8 w-24">
+                      <source src={audioUrl} type="audio/mpeg" />
+                    </audio>
+                  )}
                   <Button 
                     variant="ghost" 
                     size="sm" 
                     className="ml-auto"
-                    onClick={() => setRecordedAudio(null)}
+                    onClick={() => {
+                      setRecordedAudio(null);
+                      setAudioUrl(null);
+                    }}
                     disabled={status === 'sending' || status === 'sent'}
                   >
                     Clear
