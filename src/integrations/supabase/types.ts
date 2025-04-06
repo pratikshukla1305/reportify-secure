@@ -109,9 +109,11 @@ export type Database = {
           incident_date: string | null
           is_anonymous: boolean
           location: string | null
+          officer_notes: string | null
           report_date: string
           status: string
           title: string
+          updated_at: string | null
           user_id: string
         }
         Insert: {
@@ -120,9 +122,11 @@ export type Database = {
           incident_date?: string | null
           is_anonymous?: boolean
           location?: string | null
+          officer_notes?: string | null
           report_date?: string
           status?: string
           title: string
+          updated_at?: string | null
           user_id: string
         }
         Update: {
@@ -131,9 +135,11 @@ export type Database = {
           incident_date?: string | null
           is_anonymous?: boolean
           location?: string | null
+          officer_notes?: string | null
           report_date?: string
           status?: string
           title?: string
+          updated_at?: string | null
           user_id?: string
         }
         Relationships: []

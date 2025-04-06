@@ -170,12 +170,15 @@ const SOSModal = ({ open, onOpenChange, userLocation }: SOSModalProps) => {
           longitude: userLocation.lng,
           latitude: userLocation.lat,
           message: textMessage,
-          voice_recording: voiceUrl, // Store URL to the voice recording
+          voice_recording: voiceUrl, // Now correctly stored as TEXT
           urgency_level: 'High',
           contact_user: true
         });
         
-      if (error) throw error;
+      if (error) {
+        console.error("SOS alert error:", error);
+        throw error;
+      }
       
       setStatus('sent');
       

@@ -5,6 +5,21 @@ import { toast } from 'sonner';
 // Submit a report to officer
 export const submitReportToOfficer = async (reportId: string) => {
   try {
+    // First check if report exists
+    const { data: reportCheck, error: checkError } = await supabase
+      .from('crime_reports')
+      .select('*')
+      .eq('id', reportId)
+      .single();
+    
+    if (checkError) {
+      if (checkError.code === 'PGRST116') {
+        throw new Error("Report not found. Please verify the report ID.");
+      }
+      throw checkError;
+    }
+    
+    // Update report status
     const { data, error } = await supabase
       .from('crime_reports')
       .update({
@@ -19,7 +34,6 @@ export const submitReportToOfficer = async (reportId: string) => {
     }
     
     // Create notification in officer_notifications table
-    // We use type assertion to handle the TypeScript error
     const { error: notificationError } = await supabase
       .from('officer_notifications')
       .insert([

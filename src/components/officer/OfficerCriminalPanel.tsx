@@ -1,830 +1,381 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Card, 
-  CardContent, 
-  CardFooter, 
-  CardHeader, 
-  CardTitle 
-} from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { 
-  Search, 
-  Plus, 
-  User, 
-  MapPin, 
-  Edit, 
-  Trash2, 
-  Bell, 
-  Eye,
-  Save,
-  XCircle,
-  FileText
-} from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { toast } from '@/hooks/use-toast';
-import { getWantedIndividuals, updateWantedIndividuals, WantedIndividual } from '@/data/wantedIndividuals';
-
-// Mock tips data
-const mockTips = [
-  {
-    id: 'tip-001',
-    criminalId: '1',
-    criminalName: 'John Doe',
-    submittedBy: 'Anonymous',
-    contactInfo: 'anonymous@example.com',
-    location: 'Downtown Central Square',
-    description: 'I believe I saw this person at the Central Square coffee shop around 3 PM today. He was wearing a red jacket and black cap.',
-    date: new Date(Date.now() - 1000 * 60 * 60 * 3), // 3 hours ago
-    status: 'new'
-  },
-  {
-    id: 'tip-002',
-    criminalId: '3',
-    criminalName: 'Robert Johnson',
-    submittedBy: 'Jane Wilson',
-    contactInfo: '+1 (555) 987-6543',
-    location: 'West Side Mall, near the food court',
-    description: 'This individual has been frequently visiting the mall food court in the evenings. Approximately 7-8 PM. Usually sits alone at the corner table.',
-    date: new Date(Date.now() - 1000 * 60 * 60 * 12), // 12 hours ago
-    status: 'investigating'
-  },
-  {
-    id: 'tip-003',
-    criminalId: '2',
-    criminalName: 'Jane Smith',
-    submittedBy: 'Store Manager',
-    contactInfo: 'manager@example.com',
-    location: 'Riverside Gas Station',
-    description: 'The security camera footage from last night shows someone matching this description using a suspicious credit card at our gas station around 11:30 PM.',
-    date: new Date(Date.now() - 1000 * 60 * 60 * 24), // 1 day ago
-    status: 'resolved'
-  }
-];
-
-interface CriminalFormData {
-  id: string;
-  name: string;
-  age: string;
-  height: string;
-  weight: string;
-  lastKnownLocation: string;
-  charges: string;
-  caseNumber: string;
-  dangerLevel: 'Low' | 'Medium' | 'High';
-  photoUrl: string;
-  description?: string;
-}
+import { useToast } from '@/components/ui/use-toast';
+import { 
+  User, 
+  Upload,
+} from 'lucide-react';
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogDescription, 
+  DialogFooter, 
+  DialogHeader, 
+  DialogTitle 
+} from '@/components/ui/dialog';
+import { createCriminalProfile, getCriminalProfiles } from '@/services/officerServices';
+import { uploadCriminalPhoto } from '@/utils/uploadUtils';
+import { useOfficerAuth } from '@/contexts/OfficerAuthContext';
+import { CriminalProfile } from '@/types/officer';
 
 const OfficerCriminalPanel = () => {
-  const [criminalData, setCriminalData] = useState<WantedIndividual[]>([]);
-  const [tipData, setTipData] = useState(mockTips);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCriminal, setSelectedCriminal] = useState<WantedIndividual | null>(null);
-  const [selectedTip, setSelectedTip] = useState<any | null>(null);
-  const [criminalDetailsOpen, setCriminalDetailsOpen] = useState(false);
-  const [tipDetailsOpen, setTipDetailsOpen] = useState(false);
-  const [addEditOpen, setAddEditOpen] = useState(false);
-  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-  const [currentTab, setCurrentTab] = useState('criminals');
-  const [tipStatus, setTipStatus] = useState('new');
-  const [isEditing, setIsEditing] = useState(false);
-  
-  const [formData, setFormData] = useState<CriminalFormData>({
-    id: '',
-    name: '',
+  const { toast } = useToast();
+  const { officer } = useOfficerAuth();
+  const [criminals, setCriminals] = useState<CriminalProfile[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [formData, setFormData] = useState({
+    full_name: '',
     age: '',
     height: '',
     weight: '',
-    lastKnownLocation: '',
+    last_known_location: '',
+    case_number: '',
+    risk_level: 'medium',
     charges: '',
-    caseNumber: '',
-    dangerLevel: 'Medium',
-    photoUrl: '/placeholder.svg',
-    description: ''
+    additional_information: ''
   });
-  
-  const formatDate = (date: Date) => {
-    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+  const fetchCriminals = async () => {
+    try {
+      const data = await getCriminalProfiles();
+      setCriminals(data);
+    } catch (error: any) {
+      toast({
+        title: "Error fetching criminals",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
-  
-  const getFilteredCriminals = () => {
-    if (!searchQuery) return criminalData;
-    
-    const query = searchQuery.toLowerCase();
-    return criminalData.filter(
-      criminal => 
-        criminal.name.toLowerCase().includes(query) || 
-        criminal.charges.toLowerCase().includes(query) ||
-        criminal.lastKnownLocation.toLowerCase().includes(query) ||
-        criminal.caseNumber.toLowerCase().includes(query)
-    );
-  };
-  
-  const getFilteredTips = () => {
-    if (!searchQuery) return tipData;
-    
-    const query = searchQuery.toLowerCase();
-    return tipData.filter(
-      tip => 
-        tip.criminalName.toLowerCase().includes(query) || 
-        tip.location.toLowerCase().includes(query) ||
-        tip.description.toLowerCase().includes(query)
-    );
-  };
-  
+
   useEffect(() => {
-    setCriminalData(getWantedIndividuals());
+    fetchCriminals();
   }, []);
-  
-  const handleViewCriminalDetails = (criminal: WantedIndividual) => {
-    setSelectedCriminal(criminal);
-    setCriminalDetailsOpen(true);
+
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setPhotoFile(file);
+      setPhotoPreview(URL.createObjectURL(file));
+    }
   };
-  
-  const handleViewTipDetails = (tip: any) => {
-    setSelectedTip(tip);
-    setTipStatus(tip.status);
-    setTipDetailsOpen(true);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
-  
-  const handleAddCriminal = () => {
+
+  const handleSelectChange = (name: string, value: string) => {
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = async () => {
+    setIsLoading(true);
+    try {
+      // Upload photo first if available
+      let photoUrl = null;
+      if (photoFile && officer) {
+        photoUrl = await uploadCriminalPhoto(photoFile, officer.id.toString());
+      }
+      
+      // Create criminal profile
+      await createCriminalProfile({
+        full_name: formData.full_name,
+        age: formData.age ? parseInt(formData.age) : null,
+        height: formData.height ? parseFloat(formData.height) : null,
+        weight: formData.weight ? parseFloat(formData.weight) : null,
+        last_known_location: formData.last_known_location,
+        case_number: formData.case_number,
+        risk_level: formData.risk_level,
+        charges: formData.charges,
+        additional_information: formData.additional_information,
+        photo_url: photoUrl
+      });
+      
+      toast({
+        title: "Criminal profile created",
+        description: "The profile has been added to the database",
+      });
+      
+      setIsDialogOpen(false);
+      resetForm();
+      fetchCriminals();
+    } catch (error: any) {
+      toast({
+        title: "Error creating profile",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const resetForm = () => {
     setFormData({
-      id: '',
-      name: '',
+      full_name: '',
       age: '',
       height: '',
       weight: '',
-      lastKnownLocation: '',
+      last_known_location: '',
+      case_number: '',
+      risk_level: 'medium',
       charges: '',
-      caseNumber: '',
-      dangerLevel: 'Medium',
-      photoUrl: '/placeholder.svg',
-      description: ''
+      additional_information: ''
     });
-    setIsEditing(false);
-    setAddEditOpen(true);
-  };
-  
-  const handleEditCriminal = (criminal: WantedIndividual) => {
-    setFormData({
-      ...criminal
-    });
-    setIsEditing(true);
-    setAddEditOpen(true);
-  };
-  
-  const handleDeleteClick = (criminal: WantedIndividual) => {
-    setSelectedCriminal(criminal);
-    setDeleteConfirmOpen(true);
-  };
-  
-  const handleDeleteConfirm = () => {
-    if (selectedCriminal) {
-      const updatedCriminals = criminalData.filter(c => c.id !== selectedCriminal.id);
-      setCriminalData(updatedCriminals);
-      updateWantedIndividuals(updatedCriminals);
-      
-      toast({
-        title: "Profile deleted",
-        description: `Criminal profile for "${selectedCriminal.name}" has been deleted.`,
-      });
-      
-      setDeleteConfirmOpen(false);
-    }
-  };
-  
-  const handleSaveCriminal = () => {
-    if (!formData.name || !formData.charges || !formData.lastKnownLocation || !formData.caseNumber) {
-      toast({
-        title: "Missing information",
-        description: "Please fill in all required fields.",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    const criminalToSave: WantedIndividual = {
-      id: formData.id || `${Date.now()}`,
-      name: formData.name,
-      age: formData.age,
-      height: formData.height,
-      weight: formData.weight,
-      lastKnownLocation: formData.lastKnownLocation,
-      charges: formData.charges,
-      caseNumber: formData.caseNumber,
-      dangerLevel: formData.dangerLevel,
-      photoUrl: formData.photoUrl,
-      description: formData.description
-    };
-    
-    let updatedCriminals: WantedIndividual[];
-    
-    if (isEditing) {
-      updatedCriminals = criminalData.map(c => 
-        c.id === formData.id ? criminalToSave : c
-      );
-      setCriminalData(updatedCriminals);
-      updateWantedIndividuals(updatedCriminals);
-      
-      toast({
-        title: "Profile updated",
-        description: `Criminal profile for "${formData.name}" has been updated.`,
-      });
-    } else {
-      updatedCriminals = [...criminalData, criminalToSave];
-      setCriminalData(updatedCriminals);
-      updateWantedIndividuals(updatedCriminals);
-      
-      toast({
-        title: "Profile created",
-        description: `New criminal profile for "${formData.name}" has been created.`,
-      });
-    }
-    
-    setAddEditOpen(false);
-  };
-  
-  const handleUpdateTipStatus = () => {
-    if (selectedTip) {
-      const updatedTips = tipData.map(t => 
-        t.id === selectedTip.id ? { ...t, status: tipStatus } : t
-      );
-      setTipData(updatedTips);
-      
-      toast({
-        title: "Tip status updated",
-        description: `Tip status has been updated to ${tipStatus}.`,
-      });
-      
-      setTipDetailsOpen(false);
-    }
-  };
-  
-  const getDangerBadge = (level: 'Low' | 'Medium' | 'High') => {
-    switch (level) {
-      case 'High':
-        return <Badge variant="destructive">High Risk</Badge>;
-      case 'Medium':
-        return <Badge variant="default">Medium Risk</Badge>;
-      case 'Low':
-        return <Badge variant="outline">Low Risk</Badge>;
-      default:
-        return <Badge variant="outline">{level}</Badge>;
-    }
-  };
-  
-  const getTipStatusBadge = (status: string) => {
-    switch (status) {
-      case 'new':
-        return <Badge variant="outline">New</Badge>;
-      case 'investigating':
-        return <Badge variant="default">Investigating</Badge>;
-      case 'resolved':
-        return <Badge className="bg-green-600">Resolved</Badge>;
-      default:
-        return <Badge variant="outline">{status}</Badge>;
-    }
+    setPhotoFile(null);
+    setPhotoPreview(null);
   };
 
   return (
     <div>
-      <div className="mb-6 flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <Input
-            placeholder={currentTab === 'criminals' ? "Search criminal database..." : "Search tips..."}
-            className="pl-10"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
-        {currentTab === 'criminals' && (
-          <Button 
-            onClick={handleAddCriminal}
-            className="bg-blue-600"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Add Criminal Profile
-          </Button>
-        )}
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-xl font-semibold">Criminal Database</h2>
+        <Button onClick={() => setIsDialogOpen(true)}>Add New Criminal</Button>
       </div>
       
-      <Tabs value={currentTab} onValueChange={setCurrentTab} className="mb-6">
-        <TabsList>
-          <TabsTrigger value="criminals">Criminal Database</TabsTrigger>
-          <TabsTrigger value="tips">Citizen Tips</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="criminals" className="mt-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {getFilteredCriminals().map(criminal => (
-              <Card key={criminal.id} className="overflow-hidden hover:shadow-md transition-shadow">
-                <CardHeader className="p-4 pb-2">
-                  <div className="flex justify-between items-start">
-                    <CardTitle className="text-lg">{criminal.name}</CardTitle>
-                    {getDangerBadge(criminal.dangerLevel)}
+      {isLoading ? (
+        <div className="flex justify-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-shield-blue"></div>
+        </div>
+      ) : criminals.length === 0 ? (
+        <div className="text-center py-8 text-gray-500">
+          No criminal profiles found
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {criminals.map((criminal) => (
+            <div key={criminal.id} className="border rounded-lg p-4">
+              <div className="flex items-start space-x-3">
+                {criminal.photo_url ? (
+                  <img 
+                    src={criminal.photo_url} 
+                    alt={criminal.full_name} 
+                    className="w-20 h-20 object-cover rounded-md"
+                  />
+                ) : (
+                  <div className="w-20 h-20 bg-gray-200 rounded-md flex items-center justify-center">
+                    <User className="w-10 h-10 text-gray-400" />
                   </div>
-                  <div className="flex items-center text-xs text-gray-500 mt-1">
-                    <MapPin className="h-3 w-3 mr-1" />
-                    <span>Last seen: {criminal.lastKnownLocation}</span>
+                )}
+                
+                <div className="flex-1">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-bold text-lg">{criminal.full_name}</h3>
+                    <div className={`px-2 py-1 rounded text-xs ${criminal.risk_level === 'high' ? 'bg-red-100 text-red-800' : criminal.risk_level === 'medium' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}`}>
+                      {criminal.risk_level?.charAt(0).toUpperCase() + criminal.risk_level?.slice(1) || 'Unknown'} Risk
+                    </div>
                   </div>
-                </CardHeader>
-                <CardContent className="p-4 pt-2">
-                  <div className="aspect-w-3 aspect-h-4 mb-3">
-                    <img
-                      src={criminal.photoUrl}
-                      alt={`Wanted: ${criminal.name}`}
-                      className="object-cover w-full h-[150px] rounded-md"
-                    />
+                  
+                  <div className="text-sm text-gray-500">Case #{criminal.case_number}</div>
+                  
+                  <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
+                    {criminal.age && (
+                      <div>
+                        <span className="font-medium">Age:</span> {criminal.age}
+                      </div>
+                    )}
+                    {criminal.height && (
+                      <div>
+                        <span className="font-medium">Height:</span> {criminal.height} cm
+                      </div>
+                    )}
+                    {criminal.weight && (
+                      <div>
+                        <span className="font-medium">Weight:</span> {criminal.weight} kg
+                      </div>
+                    )}
+                    <div className="col-span-2">
+                      <span className="font-medium">Last seen:</span> {criminal.last_known_location}
+                    </div>
                   </div>
-                  <p className="text-sm text-gray-700 line-clamp-2 mb-2">{criminal.charges}</p>
-                  <div className="flex items-center text-xs text-gray-500">
-                    <span className="font-semibold mr-1">Case #:</span> {criminal.caseNumber}
-                  </div>
-                </CardContent>
-                <CardFooter className="p-4 pt-0 flex gap-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="flex-1"
-                    onClick={() => handleViewCriminalDetails(criminal)}
-                  >
-                    <Eye className="h-3.5 w-3.5 mr-1.5" />
-                    View
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="flex-1"
-                    onClick={() => handleEditCriminal(criminal)}
-                  >
-                    <Edit className="h-3.5 w-3.5 mr-1.5" />
-                    Edit
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="flex-1 text-red-600 hover:text-red-700 hover:bg-red-50"
-                    onClick={() => handleDeleteClick(criminal)}
-                  >
-                    <Trash2 className="h-3.5 w-3.5 mr-1.5" />
-                    Delete
-                  </Button>
-                </CardFooter>
-              </Card>
-            ))}
-            
-            {getFilteredCriminals().length === 0 && (
-              <div className="col-span-3 text-center py-8">
-                <User className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-                <h3 className="text-lg font-medium text-gray-600">No criminal profiles found</h3>
-                <p className="text-gray-500 mt-1">
-                  {searchQuery 
-                    ? "No criminal profiles match your search criteria."
-                    : "There are no criminal profiles in the database."
-                  }
-                </p>
-                <Button 
-                  onClick={handleAddCriminal}
-                  className="mt-4 bg-blue-600"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Criminal Profile
-                </Button>
+                </div>
               </div>
-            )}
-          </div>
-        </TabsContent>
-        
-        <TabsContent value="tips" className="mt-6">
-          <div className="space-y-4">
-            {getFilteredTips().map(tip => (
-              <Card key={tip.id} className="overflow-hidden hover:shadow-md transition-shadow">
-                <CardHeader className="pb-2 flex flex-row items-start justify-between space-y-0">
-                  <div>
-                    <CardTitle className="text-base font-medium flex items-center">
-                      <Bell className="h-4 w-4 text-blue-500 mr-2" />
-                      Tip for: {tip.criminalName}
-                    </CardTitle>
-                    <p className="text-sm text-gray-500 flex items-center mt-1">
-                      <MapPin className="h-3.5 w-3.5 mr-1" />
-                      {tip.location}
-                    </p>
-                  </div>
-                  {getTipStatusBadge(tip.status)}
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm line-clamp-2">{tip.description}</p>
-                  <div className="flex justify-between items-center mt-2 text-xs text-gray-500">
-                    <span>From: {tip.submittedBy}</span>
-                    <span>Received: {formatDate(tip.date)}</span>
-                  </div>
-                </CardContent>
-                <CardFooter className="pt-0">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="w-full text-blue-600"
-                    onClick={() => handleViewTipDetails(tip)}
-                  >
-                    <Eye className="h-4 w-4 mr-2" />
-                    View Tip Details
-                  </Button>
-                </CardFooter>
-              </Card>
-            ))}
-            
-            {getFilteredTips().length === 0 && (
-              <div className="text-center py-8">
-                <Bell className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-                <h3 className="text-lg font-medium text-gray-600">No tips found</h3>
-                <p className="text-gray-500 mt-1">
-                  {searchQuery 
-                    ? "No tips match your search criteria."
-                    : "There are no submitted tips to review."
-                  }
-                </p>
+              
+              <div className="mt-3">
+                <h4 className="font-semibold">Charges:</h4>
+                <p className="text-sm">{criminal.charges}</p>
               </div>
-            )}
-          </div>
-        </TabsContent>
-      </Tabs>
+              
+              {criminal.additional_information && (
+                <div className="mt-2">
+                  <h4 className="font-semibold">Additional Information:</h4>
+                  <p className="text-sm">{criminal.additional_information}</p>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
 
-      {/* Criminal Details Dialog */}
-      <Dialog open={criminalDetailsOpen} onOpenChange={setCriminalDetailsOpen}>
-        {selectedCriminal && (
-          <DialogContent className="sm:max-w-3xl">
-            <DialogHeader>
-              <DialogTitle className="flex items-center text-xl">
-                {selectedCriminal.name}
-                <span className="ml-auto">{getDangerBadge(selectedCriminal.dangerLevel)}</span>
-              </DialogTitle>
-              <DialogDescription>
-                Case #: {selectedCriminal.caseNumber}
-              </DialogDescription>
-            </DialogHeader>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <img
-                  src={selectedCriminal.photoUrl}
-                  alt={`Wanted: ${selectedCriminal.name}`}
-                  className="w-full h-auto rounded-md"
-                />
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Add New Criminal Profile</DialogTitle>
+            <DialogDescription>
+              Enter the details of the wanted criminal to add to the database.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
+            <div className="md:col-span-2 flex flex-col items-center">
+              <div className="w-32 h-32 bg-gray-100 rounded-full mb-2 overflow-hidden flex items-center justify-center">
+                {photoPreview ? (
+                  <img src={photoPreview} alt="Preview" className="w-full h-full object-cover" />
+                ) : (
+                  <User className="w-12 h-12 text-gray-400" />
+                )}
               </div>
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <h3 className="text-sm font-medium">Personal Information</h3>
-                  <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-                    <div>
-                      <span className="text-gray-500">Age:</span>
-                      <span className="ml-2">{selectedCriminal.age}</span>
-                    </div>
-                    <div>
-                      <span className="text-gray-500">Height:</span>
-                      <span className="ml-2">{selectedCriminal.height}</span>
-                    </div>
-                    <div>
-                      <span className="text-gray-500">Weight:</span>
-                      <span className="ml-2">{selectedCriminal.weight}</span>
-                    </div>
-                    <div>
-                      <span className="text-gray-500">Risk Level:</span>
-                      <span className="ml-2">{selectedCriminal.dangerLevel}</span>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="space-y-2">
-                  <h3 className="text-sm font-medium">Last Known Location</h3>
-                  <p className="text-sm">{selectedCriminal.lastKnownLocation}</p>
-                </div>
-                
-                <div className="space-y-2">
-                  <h3 className="text-sm font-medium">Charges</h3>
-                  <p className="text-sm">{selectedCriminal.charges}</p>
-                </div>
-                
-                {selectedCriminal.description && (
-                  <div className="space-y-2">
-                    <h3 className="text-sm font-medium">Additional Information</h3>
-                    <p className="text-sm">{selectedCriminal.description}</p>
-                  </div>
+              <div className="flex items-center space-x-2">
+                <Label htmlFor="photo-upload" className="cursor-pointer text-sm px-3 py-1 rounded bg-blue-50 text-blue-600 hover:bg-blue-100 flex items-center">
+                  <Upload className="w-4 h-4 mr-1" />
+                  Upload Photo
+                </Label>
+                <input 
+                  id="photo-upload" 
+                  type="file" 
+                  accept="image/*" 
+                  className="hidden" 
+                  onChange={handlePhotoUpload}
+                />
+                {photoPreview && (
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => {
+                      setPhotoFile(null);
+                      setPhotoPreview(null);
+                    }}
+                  >
+                    Clear
+                  </Button>
                 )}
               </div>
             </div>
-            
-            <DialogFooter className="flex flex-col sm:flex-row gap-2 mt-4">
-              <Button 
-                variant="outline"
-                className="w-full sm:w-auto"
-                onClick={() => setCriminalDetailsOpen(false)}
-              >
-                Close
-              </Button>
-              <Button 
-                className="w-full sm:w-auto bg-red-600 hover:bg-red-700"
-                onClick={() => {
-                  setCriminalDetailsOpen(false);
-                  handleDeleteClick(selectedCriminal);
-                }}
-              >
-                <Trash2 className="h-4 w-4 mr-2" />
-                Delete Profile
-              </Button>
-              <Button 
-                className="w-full sm:w-auto"
-                onClick={() => {
-                  setCriminalDetailsOpen(false);
-                  handleEditCriminal(selectedCriminal);
-                }}
-              >
-                <Edit className="h-4 w-4 mr-2" />
-                Edit Profile
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        )}
-      </Dialog>
-      
-      {/* Tip Details Dialog */}
-      <Dialog open={tipDetailsOpen} onOpenChange={setTipDetailsOpen}>
-        {selectedTip && (
-          <DialogContent className="sm:max-w-2xl">
-            <DialogHeader>
-              <DialogTitle className="flex items-center">
-                <Bell className="h-4 w-4 text-blue-500 mr-2" />
-                Tip Details
-                <span className="ml-auto">{getTipStatusBadge(selectedTip.status)}</span>
-              </DialogTitle>
-              <DialogDescription>
-                For Case: {selectedTip.criminalName}
-              </DialogDescription>
-            </DialogHeader>
-            
-            <div className="space-y-4">
-              <div className="flex justify-between">
-                <div>
-                  <div className="text-sm font-medium">Submitted By</div>
-                  <div className="text-sm">{selectedTip.submittedBy}</div>
-                </div>
-                <div className="text-right">
-                  <div className="text-sm font-medium">Received</div>
-                  <div className="text-sm">{formatDate(selectedTip.date)}</div>
-                </div>
-              </div>
-              
-              <div>
-                <div className="text-sm font-medium">Contact Information</div>
-                <div className="text-sm">{selectedTip.contactInfo}</div>
-              </div>
-              
-              <div>
-                <div className="text-sm font-medium">Location</div>
-                <div className="text-sm">{selectedTip.location}</div>
-              </div>
-              
-              <div>
-                <div className="text-sm font-medium">Tip Information</div>
-                <div className="p-3 bg-gray-50 rounded-md text-sm">
-                  {selectedTip.description}
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <div className="text-sm font-medium">Update Status</div>
-                <Select value={tipStatus} onValueChange={setTipStatus}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="new">New</SelectItem>
-                    <SelectItem value="investigating">Investigating</SelectItem>
-                    <SelectItem value="resolved">Resolved</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+
+            <div>
+              <Label htmlFor="full_name">Full Name</Label>
+              <Input 
+                id="full_name" 
+                name="full_name" 
+                value={formData.full_name} 
+                onChange={handleInputChange} 
+              />
             </div>
             
-            <DialogFooter className="flex flex-col sm:flex-row gap-2 mt-4">
-              <Button 
-                variant="outline"
-                className="w-full sm:w-auto"
-                onClick={() => setTipDetailsOpen(false)}
-              >
-                Close
-              </Button>
-              
-              <Button 
-                variant="outline"
-                className="w-full sm:w-auto"
-              >
-                <FileText className="h-4 w-4 mr-2" />
-                Generate Report
-              </Button>
-              
-              <Button 
-                className="w-full sm:w-auto"
-                onClick={handleUpdateTipStatus}
-                disabled={tipStatus === selectedTip.status}
-              >
-                <Save className="h-4 w-4 mr-2" />
-                Update Status
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        )}
-      </Dialog>
-      
-      {/* Add/Edit Criminal Dialog */}
-      <Dialog open={addEditOpen} onOpenChange={setAddEditOpen}>
-        <DialogContent className="sm:max-w-3xl">
-          <DialogHeader>
-            <DialogTitle>{isEditing ? 'Edit Criminal Profile' : 'Add New Criminal Profile'}</DialogTitle>
-            <DialogDescription>
-              {isEditing 
-                ? 'Update the information for this criminal profile' 
-                : 'Fill in the details to create a new criminal profile'
-              }
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Full Name</label>
-                <Input 
-                  value={formData.name}
-                  onChange={(e) => setFormData({...formData, name: e.target.value})}
-                  placeholder="Enter full name"
-                />
-              </div>
-              
-              <div className="grid grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Age</label>
-                  <Input 
-                    value={formData.age}
-                    onChange={(e) => setFormData({...formData, age: e.target.value})}
-                    placeholder="Age"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Height</label>
-                  <Input 
-                    value={formData.height}
-                    onChange={(e) => setFormData({...formData, height: e.target.value})}
-                    placeholder="Height"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Weight</label>
-                  <Input 
-                    value={formData.weight}
-                    onChange={(e) => setFormData({...formData, weight: e.target.value})}
-                    placeholder="Weight"
-                  />
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Last Known Location</label>
-                <Input 
-                  value={formData.lastKnownLocation}
-                  onChange={(e) => setFormData({...formData, lastKnownLocation: e.target.value})}
-                  placeholder="Enter location"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Case Number</label>
-                <Input 
-                  value={formData.caseNumber}
-                  onChange={(e) => setFormData({...formData, caseNumber: e.target.value})}
-                  placeholder="Enter case number"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Risk Level</label>
-                <Select 
-                  value={formData.dangerLevel}
-                  onValueChange={(value: 'Low' | 'Medium' | 'High') => setFormData({...formData, dangerLevel: value})}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select risk level" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Low">Low</SelectItem>
-                    <SelectItem value="Medium">Medium</SelectItem>
-                    <SelectItem value="High">High</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+            <div>
+              <Label htmlFor="case_number">Case Number</Label>
+              <Input 
+                id="case_number" 
+                name="case_number" 
+                value={formData.case_number} 
+                onChange={handleInputChange} 
+              />
             </div>
             
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Photo URL</label>
-                <Input 
-                  value={formData.photoUrl}
-                  onChange={(e) => setFormData({...formData, photoUrl: e.target.value})}
-                  placeholder="Enter photo URL"
-                />
-                <div className="bg-gray-100 rounded-md p-2 aspect-square flex items-center justify-center">
-                  {formData.photoUrl ? (
-                    <img 
-                      src={formData.photoUrl} 
-                      alt="Criminal" 
-                      className="max-h-full max-w-full object-contain" 
-                    />
-                  ) : (
-                    <User className="h-16 w-16 text-gray-400" />
-                  )}
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Charges</label>
-                <Textarea 
-                  value={formData.charges}
-                  onChange={(e) => setFormData({...formData, charges: e.target.value})}
-                  placeholder="Enter charges"
-                  rows={3}
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Additional Information</label>
-                <Textarea 
-                  value={formData.description || ''}
-                  onChange={(e) => setFormData({...formData, description: e.target.value})}
-                  placeholder="Enter any additional information"
-                  rows={3}
-                />
-              </div>
+            <div>
+              <Label htmlFor="age">Age (Years)</Label>
+              <Input 
+                id="age" 
+                name="age" 
+                type="number" 
+                value={formData.age} 
+                onChange={handleInputChange} 
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="height">Height (cm)</Label>
+              <Input 
+                id="height" 
+                name="height" 
+                type="number" 
+                step="0.1" 
+                value={formData.height} 
+                onChange={handleInputChange} 
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="weight">Weight (kg)</Label>
+              <Input 
+                id="weight" 
+                name="weight" 
+                type="number" 
+                step="0.1" 
+                value={formData.weight} 
+                onChange={handleInputChange} 
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="risk_level">Risk Level</Label>
+              <Select 
+                value={formData.risk_level} 
+                onValueChange={(value) => handleSelectChange('risk_level', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select risk level" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="low">Low</SelectItem>
+                  <SelectItem value="medium">Medium</SelectItem>
+                  <SelectItem value="high">High</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="md:col-span-2">
+              <Label htmlFor="last_known_location">Last Known Location</Label>
+              <Input 
+                id="last_known_location" 
+                name="last_known_location" 
+                value={formData.last_known_location} 
+                onChange={handleInputChange} 
+              />
+            </div>
+            
+            <div className="md:col-span-2">
+              <Label htmlFor="charges">Charges</Label>
+              <Textarea 
+                id="charges" 
+                name="charges" 
+                value={formData.charges} 
+                onChange={handleInputChange}
+                rows={2}
+              />
+            </div>
+            
+            <div className="md:col-span-2">
+              <Label htmlFor="additional_information">Additional Information</Label>
+              <Textarea 
+                id="additional_information" 
+                name="additional_information" 
+                value={formData.additional_information} 
+                onChange={handleInputChange}
+                rows={3}
+              />
             </div>
           </div>
-          
-          <DialogFooter className="flex flex-col sm:flex-row gap-2 mt-4">
-            <Button 
-              variant="outline"
-              className="w-full sm:w-auto"
-              onClick={() => setAddEditOpen(false)}
-            >
-              <XCircle className="h-4 w-4 mr-2" />
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDialogOpen(false)} disabled={isLoading}>
               Cancel
             </Button>
-            <Button 
-              className="w-full sm:w-auto bg-green-600 hover:bg-green-700"
-              onClick={handleSaveCriminal}
-            >
-              <Save className="h-4 w-4 mr-2" />
-              {isEditing ? 'Update Profile' : 'Create Profile'}
+            <Button onClick={handleSubmit} disabled={!formData.full_name || !formData.case_number || isLoading}>
+              {isLoading ? 'Adding...' : 'Add Criminal Profile'}
             </Button>
           </DialogFooter>
         </DialogContent>
-      </Dialog>
-      
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
-        {selectedCriminal && (
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Confirm Deletion</DialogTitle>
-              <DialogDescription>
-                Are you sure you want to delete this criminal profile? This action cannot be undone.
-              </DialogDescription>
-            </DialogHeader>
-            
-            <div className="p-3 bg-red-50 rounded-md border border-red-100 my-2">
-              <p className="font-medium text-red-800">{selectedCriminal.name}</p>
-              <p className="text-sm text-red-600 mt-1">Case #: {selectedCriminal.caseNumber}</p>
-            </div>
-            
-            <DialogFooter className="flex flex-col sm:flex-row gap-2 mt-4">
-              <Button 
-                variant="outline"
-                className="w-full sm:w-auto"
-                onClick={() => setDeleteConfirmOpen(false)}
-              >
-                Cancel
-              </Button>
-              <Button 
-                className="w-full sm:w-auto bg-red-600 hover:bg-red-700"
-                onClick={handleDeleteConfirm}
-              >
-                <Trash2 className="h-4 w-4 mr-2" />
-                Delete Profile
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        )}
       </Dialog>
     </div>
   );

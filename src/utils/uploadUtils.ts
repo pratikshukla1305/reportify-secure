@@ -132,7 +132,10 @@ export const uploadVoiceMessage = async (
         upsert: false
       });
       
-    if (error) throw error;
+    if (error) {
+      console.error('Voice upload error:', error);
+      throw error;
+    }
     
     // Get public URL
     const { data } = supabase.storage
@@ -161,5 +164,53 @@ export const getReportEvidence = async (reportId: string): Promise<any[]> => {
   } catch (error: any) {
     console.error('Error fetching evidence:', error);
     return [];
+  }
+};
+
+// Upload criminal photo
+export const uploadCriminalPhoto = async (
+  photoFile: File,
+  userId: string | undefined
+): Promise<string | null> => {
+  if (!userId) {
+    toast.error("You must be logged in to upload photos");
+    return null;
+  }
+  
+  try {
+    const fileExt = photoFile.name.split('.').pop();
+    const fileName = `criminal-${Date.now()}.${fileExt}`;
+    const filePath = `${userId}/criminal-photos/${fileName}`;
+    
+    // Check if evidence bucket exists and create if needed
+    const { data: buckets } = await supabase.storage.listBuckets();
+    const evidenceBucketExists = buckets?.some(bucket => bucket.name === 'evidence');
+    
+    if (!evidenceBucketExists) {
+      await supabase.storage.createBucket('evidence', {
+        public: false,
+      });
+    }
+    
+    // Upload photo
+    const { error } = await supabase.storage
+      .from('evidence')
+      .upload(filePath, photoFile, {
+        cacheControl: '3600',
+        upsert: false
+      });
+      
+    if (error) throw error;
+    
+    // Get public URL
+    const { data } = supabase.storage
+      .from('evidence')
+      .getPublicUrl(filePath);
+      
+    return data.publicUrl;
+  } catch (error: any) {
+    console.error('Error uploading criminal photo:', error);
+    toast.error(`Photo upload failed: ${error.message}`);
+    return null;
   }
 };
