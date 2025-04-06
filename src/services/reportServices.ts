@@ -29,7 +29,7 @@ export const submitReportToOfficer = async (reportId: string) => {
           is_read: false,
           message: 'New crime report submitted for review'
         }
-      ]) as { data: any; error: any };
+      ]) as unknown as { data: any; error: any };
     
     if (notificationError) {
       console.error('Error creating notification:', notificationError);

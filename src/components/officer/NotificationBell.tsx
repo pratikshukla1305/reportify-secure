@@ -29,11 +29,12 @@ const NotificationBell = () => {
   useEffect(() => {
     const fetchNotifications = async () => {
       try {
+        // Use type assertion to work around TypeScript limitations
         const { data, error } = await supabase
           .from('officer_notifications')
           .select('*')
           .order('created_at', { ascending: false })
-          .limit(5) as { data: Notification[] | null; error: any };
+          .limit(5) as unknown as { data: Notification[] | null; error: any };
 
         if (error) throw error;
         
@@ -71,10 +72,11 @@ const NotificationBell = () => {
 
   const markAsRead = async (id: string) => {
     try {
+      // Use type assertion to work around TypeScript limitations
       await supabase
         .from('officer_notifications')
         .update({ is_read: true })
-        .eq('id', id) as { data: any; error: any };
+        .eq('id', id) as unknown as { data: any; error: any };
       
       // Update local state
       setNotifications(notifications.map(n => 
@@ -94,10 +96,11 @@ const NotificationBell = () => {
       
       if (unreadIds.length === 0) return;
 
+      // Use type assertion to work around TypeScript limitations
       await supabase
         .from('officer_notifications')
         .update({ is_read: true })
-        .in('id', unreadIds) as { data: any; error: any };
+        .in('id', unreadIds) as unknown as { data: any; error: any };
       
       // Update local state
       setNotifications(notifications.map(n => ({ ...n, is_read: true })));
