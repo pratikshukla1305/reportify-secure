@@ -19,7 +19,8 @@ export const submitReportToOfficer = async (reportId: string) => {
     }
     
     // Create notification in officer_notifications table
-    await supabase
+    // We use type assertion to handle the TypeScript error
+    const { error: notificationError } = await supabase
       .from('officer_notifications')
       .insert([
         {
@@ -28,7 +29,11 @@ export const submitReportToOfficer = async (reportId: string) => {
           is_read: false,
           message: 'New crime report submitted for review'
         }
-      ]);
+      ]) as { data: any; error: any };
+    
+    if (notificationError) {
+      console.error('Error creating notification:', notificationError);
+    }
     
     return data;
   } catch (error: any) {

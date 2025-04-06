@@ -13,8 +13,17 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
+interface Notification {
+  id: string;
+  report_id: string | null;
+  notification_type: string;
+  message: string;
+  is_read: boolean;
+  created_at: string;
+}
+
 const NotificationBell = () => {
-  const [notifications, setNotifications] = useState<any[]>([]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
@@ -24,7 +33,7 @@ const NotificationBell = () => {
           .from('officer_notifications')
           .select('*')
           .order('created_at', { ascending: false })
-          .limit(5);
+          .limit(5) as { data: Notification[] | null; error: any };
 
         if (error) throw error;
         
@@ -48,7 +57,8 @@ const NotificationBell = () => {
           table: 'officer_notifications' 
         },
         (payload) => {
-          setNotifications(prev => [payload.new, ...prev.slice(0, 4)]);
+          const newNotification = payload.new as Notification;
+          setNotifications(prev => [newNotification, ...prev.slice(0, 4)]);
           setUnreadCount(prev => prev + 1);
         }
       )
@@ -64,7 +74,7 @@ const NotificationBell = () => {
       await supabase
         .from('officer_notifications')
         .update({ is_read: true })
-        .eq('id', id);
+        .eq('id', id) as { data: any; error: any };
       
       // Update local state
       setNotifications(notifications.map(n => 
@@ -87,7 +97,7 @@ const NotificationBell = () => {
       await supabase
         .from('officer_notifications')
         .update({ is_read: true })
-        .in('id', unreadIds);
+        .in('id', unreadIds) as { data: any; error: any };
       
       // Update local state
       setNotifications(notifications.map(n => ({ ...n, is_read: true })));

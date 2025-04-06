@@ -308,6 +308,41 @@ export type Database = {
         }
         Relationships: []
       }
+      officer_notifications: {
+        Row: {
+          created_at: string
+          id: string
+          is_read: boolean
+          message: string
+          notification_type: string
+          report_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message: string
+          notification_type: string
+          report_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message?: string
+          notification_type?: string
+          report_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "officer_notifications_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "crime_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       officer_profiles: {
         Row: {
           badge_number: string
